@@ -7,13 +7,14 @@ using UnboundLib.GameModes;
 using UnityEngine;
 using System.Collections;
 using UnboundLib.Networking;
+using System.Reflection;
 
 namespace MapEmbiggener
 {
     [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
     [BepInPlugin(ModId, ModName, "1.0.0")]
     [BepInProcess("Rounds.exe")]
-    public class Mod : BaseUnityPlugin
+    public class MapEmbiggener : BaseUnityPlugin
     {
         private struct NetworkEventType
         {
@@ -35,6 +36,9 @@ namespace MapEmbiggener
         {
             Unbound.RegisterGUI(ModName, DrawGUI);
             Unbound.RegisterHandshake(ModId, OnHandShakeCompleted);
+
+            GameModeManager.AddHook(GameModeHooks.HookPickStart, (gm) => this.StartPickPhaseCamera());
+            GameModeManager.AddHook(GameModeHooks.HookPickEnd, (gm) => this.EndPickPhaseCamera());
         }
 
         private void DrawGUI()
@@ -69,5 +73,174 @@ namespace MapEmbiggener
             }
         }
 
+        private IEnumerator StartPickPhaseCamera()
+        {
+            MapManager.instance.currentMap.Map.size /= MapEmbiggener.setSize;
+
+            yield break;
+        }
+        private IEnumerator EndPickPhaseCamera()
+        {
+            MapManager.instance.currentMap.Map.size *= MapEmbiggener.setSize;
+
+            yield return new WaitForSecondsRealtime(0.1f);
+
+            yield break;
+        }
+
     }
+
+    [Serializable]
+    [HarmonyPatch(typeof(Map),"Start")]
+    class MapPatchStart
+    {
+        private static void Postfix(Map __instance)
+        {
+            __instance.transform.localScale *= MapEmbiggener.setSize;
+            __instance.size *= MapEmbiggener.setSize;
+
+        }
+    }
+    [Serializable]
+    [HarmonyPatch(typeof(Map), "StartMatch")]
+    class MapPatchStartMatch
+    {
+        private static void Postfix(Map __instance)
+        {
+            Unbound.Instance.ExecuteAfterFrames(2, () =>
+            {
+                foreach (Rigidbody2D rig in __instance.allRigs)
+                {
+                    // rescale physics objects UNLESS they have a movesequence component
+
+                    if (rig.gameObject.GetComponentInChildren<MoveSequence>() == null) { rig.transform.localScale *= MapEmbiggener.setSize; }
+                }
+                GameObject Rendering = UnityEngine.GameObject.Find("/Game/Visual/Rendering ");
+
+                if (Rendering != null)
+                {
+                    foreach (Transform transform in Rendering.GetComponentsInChildren<Transform>())
+                    {
+                        transform.localScale = Vector3.one * MapEmbiggener.setSize;
+                    }
+                }
+            });
+        }
+    }
+
+    [Serializable]
+    [HarmonyPatch(typeof(OutOfBoundsHandler), "LateUpdate")]
+    class OutOfBoundsHandlerPatchLateUpdate
+    {
+        private static bool Prefix(OutOfBoundsHandler __instance)
+        {
+            CharacterData data = (CharacterData)Traverse.Create(__instance).Field("data").GetValue();
+            float warningPercentage = (float)Traverse.Create(__instance).Field("warningPercentage").GetValue();
+
+            if (!data)
+            {
+                UnityEngine.GameObject.Destroy(__instance.gameObject);
+                return false; // skip the original (BAD IDEA)
+            }
+            if (!(bool)Traverse.Create(data.playerVel).Field("simulated").GetValue())
+            {
+                return false; // skip the original (BAD IDEA)
+            }
+            if (!data.isPlaying)
+            {
+                return false; // skip the original (BAD IDEA)
+            }
+            /*
+            float x = Mathf.InverseLerp(-35.56f, 35.56f, data.transform.position.x);
+            float y = Mathf.InverseLerp(-20f, 20f, data.transform.position.y);
+            Vector3 vector = new Vector3(x, y, 0f);
+            vector = new Vector3(Mathf.Clamp(vector.x, 0f, 1f), Mathf.Clamp(vector.y, 0f, 1f), vector.z);
+            */
+            Vector3 vector = MainCam.instance.transform.GetComponent<Camera>().WorldToScreenPoint(new Vector3(data.transform.position.x, data.transform.position.y, 0f));
+
+            vector.x /= (float)Screen.width;
+            vector.y /= (float)Screen.height;
+
+            vector = new Vector3(Mathf.Clamp01(vector.x), Mathf.Clamp01(vector.y), 0f);
+
+            Traverse.Create(__instance).Field("almostOutOfBounds").SetValue(false);
+            Traverse.Create(__instance).Field("outOfBounds").SetValue(false);
+            if (vector.x <= 0f || vector.x >= 1f || vector.y >= 1f || vector.y <= 0f)
+            {
+                Traverse.Create(__instance).Field("outOfBounds").SetValue(true);
+            }
+            else if (vector.x < warningPercentage || vector.x > 1f - warningPercentage || vector.y > 1f - warningPercentage || vector.y < warningPercentage)
+            {
+                Traverse.Create(__instance).Field("almostOutOfBounds").SetValue(true);
+                if (vector.x < warningPercentage)
+                {
+                    vector.x = 0f;
+                }
+                if (vector.x > 1f - warningPercentage)
+                {
+                    vector.x = 1f;
+                }
+                if (vector.y < warningPercentage)
+                {
+                    vector.y = 0f;
+                }
+                if (vector.y > 1f - warningPercentage)
+                {
+                    vector.y = 1f;
+                }
+            }
+            Traverse.Create(__instance).Field("counter").SetValue((float)Traverse.Create(__instance).Field("counter").GetValue() + TimeHandler.deltaTime);
+            if ((bool)Traverse.Create(__instance).Field("almostOutOfBounds").GetValue() && !data.dead)
+            {
+                __instance.transform.position = (Vector3)typeof(OutOfBoundsHandler).InvokeMember("GetPoint",
+                                                    BindingFlags.Instance | BindingFlags.InvokeMethod |
+                                                    BindingFlags.NonPublic, null, __instance, new object[] { vector });
+                __instance.transform.rotation = Quaternion.LookRotation(Vector3.forward, -(data.transform.position - __instance.transform.position));
+                if ((float)Traverse.Create(__instance).Field("counter").GetValue() > 0.1f)
+                {
+                    Traverse.Create(__instance).Field("counter").SetValue(0f);
+                    __instance.warning.Play();
+                }
+            }
+            if ((bool)Traverse.Create(__instance).Field("outOfBounds").GetValue() && !data.dead)
+            {
+                data.sinceGrounded = 0f;
+                __instance.transform.position = (Vector3)typeof(OutOfBoundsHandler).InvokeMember("GetPoint",
+                                                    BindingFlags.Instance | BindingFlags.InvokeMethod |
+                                                    BindingFlags.NonPublic, null, __instance, new object[] { vector });
+                __instance.transform.rotation = Quaternion.LookRotation(Vector3.forward, -(data.transform.position - __instance.transform.position));
+                if ((float)Traverse.Create(__instance).Field("counter").GetValue() > 0.1f && data.view.IsMine)
+                {
+                    Traverse.Create(__instance).Field("counter").SetValue(0f);
+                    if (data.block.IsBlocking())
+                    {
+                        ((ChildRPC)Traverse.Create(__instance).Field("rpc").GetValue()).CallFunction("ShieldOutOfBounds");
+                        Traverse.Create(data.playerVel).Field("velocity").SetValue((Vector2)Traverse.Create(data.playerVel).Field("velocity").GetValue() * 0f);
+                        data.healthHandler.CallTakeForce(__instance.transform.up * 400f * (float)Traverse.Create(data.playerVel).Field("mass").GetValue(), ForceMode2D.Impulse, false, true, 0f);
+                        data.transform.position = __instance.transform.position;
+                        return false; // skip the original (BAD IDEA)
+                    }
+                    ((ChildRPC)Traverse.Create(__instance).Field("rpc").GetValue()).CallFunction("OutOfBounds");
+                    data.healthHandler.CallTakeForce(__instance.transform.up * 200f * (float)Traverse.Create(data.playerVel).Field("mass").GetValue(), ForceMode2D.Impulse, false, true, 0f);
+                    data.healthHandler.CallTakeDamage(51f * __instance.transform.up, data.transform.position, null, null, true);
+                }
+            }
+            return false; // skip the original (BAD IDEA)
+
+        }
+    }
+
+    [Serializable]
+    [HarmonyPatch(typeof(OutOfBoundsHandler),"GetPoint")]
+    class OutOfBoundHandlerPatchGetPoint
+    {
+        private static bool Prefix(ref Vector3 __result, OutOfBoundsHandler __instance, Vector3 p)
+        {
+            Vector3 result = MainCam.instance.transform.GetComponent<Camera>().ScreenToWorldPoint(new Vector3(p.x * (float)Screen.width, p.y * (float)Screen.height, 0f));
+            __result = new Vector3(result.x, result.y, 0f);
+
+            return false; // skip the original (BAD IDEA)
+        }
+    }
+
 }
