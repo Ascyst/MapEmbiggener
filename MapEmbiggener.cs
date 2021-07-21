@@ -1,13 +1,12 @@
-﻿using System;
-using BepInEx;
+﻿using BepInEx;
 using HarmonyLib;
 using Photon.Pun;
+using System;
+using System.Collections;
+using System.Reflection;
 using UnboundLib;
 using UnboundLib.GameModes;
 using UnityEngine;
-using System.Collections;
-using UnboundLib.Networking;
-using System.Reflection;
 
 namespace MapEmbiggener
 {
@@ -36,7 +35,8 @@ namespace MapEmbiggener
         {
             Unbound.RegisterGUI(ModName, DrawGUI);
             Unbound.RegisterHandshake(ModId, OnHandShakeCompleted);
-
+            // Credits for new UI
+            //            Unbound.RegisterCredits("Map Embiggener", new String[] {"Ascyst (Start of Code)", "Pykess (Local man, makes mod work)"}, "github", "https://github.com/Ascyst/MapEmbiggener");
             GameModeManager.AddHook(GameModeHooks.HookPickStart, (gm) => this.StartPickPhaseCamera());
             GameModeManager.AddHook(GameModeHooks.HookPickEnd, (gm) => this.EndPickPhaseCamera());
         }
@@ -51,7 +51,6 @@ namespace MapEmbiggener
             if (GUILayout.Button("x1.5"))
             {
                 setSize = 1.5f;
-                Unbound.BuildInfoPopup("Button has been clicked");
             }
             if (GUILayout.Button("x2.0"))
             {
@@ -64,12 +63,26 @@ namespace MapEmbiggener
             GUILayout.EndHorizontal();
 
         }
+        // New UI, once merged/built/uploaded/released
+        /*
+                        private void DrawOtherGUI(GameObject obj)
+                {
+                    Unbound.CreateText("Map Embiggener", 85, obj, out _);
+                    Unbound.CreateButton("Map Size: 1.5x", 50, obj, () => { setSize = 1.5f); });
+                    Unbound.CreateButton("Map Size: 2.0x", 50, obj, () => { setSize = 2.0f); });
+                    Unbound.CreateButton("Map Size: 2.5x", 50, obj, () => { setSize = 2.5f); });
+                    Unbound.CreateButton("Map Size: 3.0x", 50, obj, () => { setSize = 3.0f); });
+                    Unbound.CreateButton("Reset Map Size", 50, obj, () => { setSize = 1.0f); });
+                } 
+        */
+
+
 
         private void OnHandShakeCompleted()
         {
             if (PhotonNetwork.IsMasterClient)
             {
-                    NetworkingManager.RaiseEventOthers(NetworkEventType.SyncSize, setSize);
+                NetworkingManager.RaiseEventOthers(NetworkEventType.SyncSize, setSize);
             }
         }
 
@@ -96,6 +109,14 @@ namespace MapEmbiggener
     {
         private static void Postfix(Map __instance)
         {
+            //    SpawnPoints::::Overcomplicated setting the value, lots of deleted code. turns out 1 line will do. 
+            //            Vector3[] spVector3 = (Vector3[])spawnPoints.GetFieldValue("localStartPos");
+            //            Vector3 spVector3Scaled = Vector3.Scale(spVector3[], new Vector3(MapEmbiggener.setSize, MapEmbiggener.setSize, MapEmbiggener.setSize));
+            //            Traverse.Create(__instance).Field("localStartPos").SetValue(spVector3Scaled);
+
+
+            // *reposition spawn points
+            __instance.GetComponentInChildren<SpawnPoint>().localStartPos *= MapEmbiggener.setSize;
             __instance.transform.localScale *= MapEmbiggener.setSize;
             __instance.size *= MapEmbiggener.setSize;
 
@@ -107,19 +128,40 @@ namespace MapEmbiggener
     {
         private static void Postfix(Map __instance)
         {
-            Unbound.Instance.ExecuteAfterFrames(2, () =>
+            // object scaling keeps resetting before this, and ExecuteAfterSeconds is throwing: UnboundLib.ExtensionMethods+<ExecuteAfterSecondsCoroutine>d__4.MoveNext () (at <10beeb46ee9c48b4b88c2147225664a5>:0). something to do with moving platform code i think. 
+            Unbound.Instance.ExecuteAfterSeconds(2, () =>
             {
-                foreach (Rigidbody2D rig in __instance.allRigs)
-                {
-                    // rescale physics objects UNLESS they have a movesequence component
 
-                    if (rig.gameObject.GetComponentInChildren<MoveSequence>() == null) { rig.transform.localScale *= MapEmbiggener.setSize; }
+                var rigPos = __instance.GetComponentInChildren<MoveSequence>().positions;
+                var storedposArray = new Vector2(1f, 1f);
+
+                if (__instance.allRigs != null)
+                {
+                    foreach (Rigidbody2D rig in __instance.allRigs)
+                    {
+                        // rescale map objects
+                        rig.transform.localScale *= MapEmbiggener.setSize;
+
+                        // *adjust pathing for moving platforms (this was working, but scaling was off and objects would get caught while pathing. i've somehow garbage'd this while trying to fix it)
+                        if (rig.gameObject.GetComponent<MoveSequence>() != null)
+                        {
+                            // *i believe the error is here, just not sure how. way too late to figure out, gnight
+                            foreach (Vector2 posArray in rigPos)
+                            {
+                                storedposArray = posArray;
+                                storedposArray *= MapEmbiggener.setSize;
+                            }
+                        }
+                    }
                 }
+                
+
                 GameObject Rendering = UnityEngine.GameObject.Find("/Game/Visual/Rendering ");
 
                 if (Rendering != null)
                 {
-                    foreach (Transform transform in Rendering.GetComponentsInChildren<Transform>())
+                    // increase render item scale, *include inactive.
+                    foreach (Transform transform in Rendering.GetComponentsInChildren<Transform>(true))
                     {
                         transform.localScale = Vector3.one * MapEmbiggener.setSize;
                     }
