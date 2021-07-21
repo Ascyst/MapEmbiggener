@@ -8,6 +8,10 @@ using UnityEngine;
 using System.Collections;
 using UnboundLib.Networking;
 using System.Reflection;
+using System.Linq;
+using System.Collections.Generic;
+using UnboundLib.Utils.UI;
+using TMPro;
 
 namespace MapEmbiggener
 {
@@ -34,13 +38,37 @@ namespace MapEmbiggener
 
         private void Start()
         {
-            Unbound.RegisterGUI(ModName, DrawGUI);
+            Unbound.RegisterCredits(ModName, new String[] {"Ascyst (Project creation)", "Pykess (Code)"}, "github", "https://github.com/Ascyst/MapEmbiggener");
             Unbound.RegisterHandshake(ModId, OnHandShakeCompleted);
+            Unbound.RegisterMenu(ModName, () => { }, NewGUI);
 
             GameModeManager.AddHook(GameModeHooks.HookPickStart, (gm) => this.StartPickPhaseCamera());
             GameModeManager.AddHook(GameModeHooks.HookPickEnd, (gm) => this.EndPickPhaseCamera());
         }
+        private void NewGUI(GameObject menu)
+        {
 
+
+            MenuHandler.CreateText("Map Embiggener Options", menu, out TextMeshProUGUI _);
+            MenuHandler.CreateText(" ", menu, out TextMeshProUGUI _, 30);
+            MenuHandler.CreateText(" ", menu, out TextMeshProUGUI warning, 30, true, Color.red);
+            MenuHandler.CreateText(" ", menu, out TextMeshProUGUI _, 30);
+            void SliderChangedAction(float val)
+            {
+                MapEmbiggener.setSize = val;
+                if (val > 2f)
+                {
+                    warning.text = "warning: scaling maps beyond 2× can cause gameplay difficulties and visual glitches".ToUpper();
+                }
+                else
+                {
+                    warning.text = " ";
+                }
+            }
+            MenuHandler.CreateSlider("Map Size Multiplier", menu, 60, 1, 3, SliderChangedAction, out UnityEngine.UI.Slider _);
+
+
+        }
         private void DrawGUI()
         {
             GUILayout.Label("Current Map Size: x" + setSize);
@@ -51,7 +79,6 @@ namespace MapEmbiggener
             if (GUILayout.Button("x1.5"))
             {
                 setSize = 1.5f;
-                Unbound.BuildInfoPopup("Button has been clicked");
             }
             if (GUILayout.Button("x2.0"))
             {
@@ -96,6 +123,7 @@ namespace MapEmbiggener
     {
         private static void Postfix(Map __instance)
         {
+            __instance.GetComponentInChildren<SpawnPoint>().localStartPos *= MapEmbiggener.setSize;
             __instance.transform.localScale *= MapEmbiggener.setSize;
             __instance.size *= MapEmbiggener.setSize;
 
@@ -112,14 +140,26 @@ namespace MapEmbiggener
                 foreach (Rigidbody2D rig in __instance.allRigs)
                 {
                     // rescale physics objects UNLESS they have a movesequence component
+                    // if they have a movesequence component then scale the points in that component
 
                     if (rig.gameObject.GetComponentInChildren<MoveSequence>() == null) { rig.transform.localScale *= MapEmbiggener.setSize; }
+                    else
+                    {
+                        
+                        List<Vector2> newPos = new List<Vector2>() { };
+                        foreach (Vector2 pos in rig.gameObject.GetComponentInChildren<MoveSequence>().positions)
+                        {
+                            newPos.Add(pos * MapEmbiggener.setSize);
+                        }
+                        rig.gameObject.GetComponentInChildren<MoveSequence>().positions = newPos.ToArray();
+                        Traverse.Create(rig.gameObject.GetComponentInChildren<MoveSequence>()).Field("startPos").SetValue((Vector2)Traverse.Create(rig.gameObject.GetComponentInChildren<MoveSequence>()).Field("startPos").GetValue() * MapEmbiggener.setSize);
+                    }
                 }
                 GameObject Rendering = UnityEngine.GameObject.Find("/Game/Visual/Rendering ");
 
                 if (Rendering != null)
                 {
-                    foreach (Transform transform in Rendering.GetComponentsInChildren<Transform>())
+                    foreach (Transform transform in Rendering.GetComponentsInChildren<Transform>(true))
                     {
                         transform.localScale = Vector3.one * MapEmbiggener.setSize;
                     }
