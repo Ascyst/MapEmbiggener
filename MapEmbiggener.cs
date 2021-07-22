@@ -12,6 +12,7 @@ using System.Linq;
 using System.Collections.Generic;
 using UnboundLib.Utils.UI;
 using TMPro;
+using UnityEngine.Events;
 
 namespace MapEmbiggener
 {
@@ -60,12 +61,22 @@ namespace MapEmbiggener
                 {
                     warning.text = "warning: scaling maps beyond 2× can cause gameplay difficulties and visual glitches".ToUpper();
                 }
+                else if (val < 1f)
+                {
+                    warning.text = "warning: scaling maps below 1× can cause gameplay difficulties and visual glitches".ToUpper();
+                }
                 else
                 {
                     warning.text = " ";
                 }
             }
-            MenuHandler.CreateSlider("Map Size Multiplier", menu, 60, 1, 3, SliderChangedAction, out UnityEngine.UI.Slider _);
+            MenuHandler.CreateSlider("Map Size Multiplier", menu, 60, 0.5f, 3f, setSize, SliderChangedAction, out UnityEngine.UI.Slider slider);
+            void ResetButton()
+            {
+                slider.value = 1f;
+                SliderChangedAction(1f);
+            }
+            MenuHandler.CreateButton("Reset Multiplier", menu, ResetButton, 30);
 
 
         }
@@ -140,9 +151,20 @@ namespace MapEmbiggener
                 foreach (Rigidbody2D rig in __instance.allRigs)
                 {
                     // rescale physics objects UNLESS they have a movesequence component
+                    // also UNLESS they are a crate from stickfight (Boss Sloth's stickfight maps mod)
                     // if they have a movesequence component then scale the points in that component
 
-                    if (rig.gameObject.GetComponentInChildren<MoveSequence>() == null) { rig.transform.localScale *= MapEmbiggener.setSize; }
+                    if (rig.gameObject.name.Contains("Real"))
+                    {
+                        rig.mass *= MapEmbiggener.setSize;
+                        continue;
+                    }
+
+                    if (rig.gameObject.GetComponentInChildren<MoveSequence>() == null)
+                    { 
+                        rig.transform.localScale *= MapEmbiggener.setSize;
+                        rig.mass *= MapEmbiggener.setSize;
+                    }
                     else
                     {
                         
