@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using UnboundLib.Utils.UI;
 using TMPro;
 using UnityEngine.Events;
+using UnityEngine.UI;
 
 namespace MapEmbiggener
 {
@@ -30,6 +31,13 @@ namespace MapEmbiggener
         private const string ModName = "Map Embiggener";
 
         public static float setSize = 1.0f;
+        public static bool suddenDeathMode = false;
+        public static bool chaosMode = false;
+
+        internal static readonly float shrinkRate = 0.9999f;
+
+        private Toggle suddenDeathModeToggle;
+        private Toggle chaosModeToggle;
 
         private void Awake()
         {
@@ -77,6 +85,26 @@ namespace MapEmbiggener
                 SliderChangedAction(1f);
             }
             MenuHandler.CreateButton("Reset Multiplier", menu, ResetButton, 30);
+            void SuddenDeathModeCheckbox(bool flag)
+            {
+                MapEmbiggener.suddenDeathMode = flag;
+                if (MapEmbiggener.chaosMode && MapEmbiggener.suddenDeathMode)
+                {
+                    MapEmbiggener.chaosMode = false;
+                    chaosModeToggle.isOn = false;
+                }
+            }
+            suddenDeathModeToggle = MenuHandler.CreateToggle(MapEmbiggener.suddenDeathMode, "Sudden Death Mode", menu, SuddenDeathModeCheckbox, 60).GetComponent<Toggle>();
+            void ChaosModeCheckbox(bool flag)
+            {
+                MapEmbiggener.chaosMode = flag;
+                if (MapEmbiggener.chaosMode && MapEmbiggener.suddenDeathMode)
+                {
+                    MapEmbiggener.suddenDeathMode = false;
+                    suddenDeathModeToggle.isOn = false;
+                }
+            }
+            chaosModeToggle = MenuHandler.CreateToggle(MapEmbiggener.chaosMode, "Chaos Mode", menu, ChaosModeCheckbox, 60).GetComponent<Toggle>();
 
 
         }
@@ -140,6 +168,7 @@ namespace MapEmbiggener
 
         }
     }
+
     [Serializable]
     [HarmonyPatch(typeof(Map), "StartMatch")]
     class MapPatchStartMatch
@@ -186,7 +215,26 @@ namespace MapEmbiggener
                         transform.localScale = Vector3.one * MapEmbiggener.setSize;
                     }
                 }
+
+                Unbound.Instance.StartCoroutine(GameModes(__instance));
             });
+        }
+
+        private static System.Collections.IEnumerator GameModes(Map instance)
+        {
+            while (instance.enabled)
+            {
+                if ((float)Traverse.Create(instance).Field("counter").GetValue() > 2f && instance.size > 1f && (MapEmbiggener.chaosMode || (MapEmbiggener.suddenDeathMode && CountPlayersAlive() <= 2)))
+                {
+                    instance.size *= MapEmbiggener.shrinkRate;
+                }
+                yield return null;
+            }
+            yield break;
+        }
+        private static int CountPlayersAlive()
+        {
+            return PlayerManager.instance.players.Where(p => !p.data.dead).Count();
         }
     }
 
