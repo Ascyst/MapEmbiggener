@@ -24,7 +24,7 @@ namespace MapEmbiggener
     {
         private struct NetworkEventType
         {
-            public const string SyncSize = ModId + "_Sync";
+            public const string SyncModSettings = ModId + "_Sync";
         }
         private const string ModId = "com.ascyst.rounds.mapembiggener";
 
@@ -42,9 +42,23 @@ namespace MapEmbiggener
         private void Awake()
         {
             new Harmony(ModId).PatchAll();
-            NetworkingManager.RegisterEvent(NetworkEventType.SyncSize, sync => setSize = (float)sync[0]);
+            Unbound.RegisterHandshake(NetworkEventType.SyncModSettings, OnHandShakeCompleted);
+        }
+        private void OnHandShakeCompleted()
+        {
+            if (PhotonNetwork.IsMasterClient)
+            {
+                NetworkingManager.RPC_Others(typeof(MapEmbiggener), nameof(SyncSettings), new object[] { MapEmbiggener.setSize, MapEmbiggener.suddenDeathMode, MapEmbiggener.chaosMode });
+            }
         }
 
+        [UnboundRPC]
+        private static void SyncSettings(float setSize, bool suddenDeath, bool chaos)
+        {
+            MapEmbiggener.setSize = setSize;
+            MapEmbiggener.suddenDeathMode = suddenDeath;
+            MapEmbiggener.chaosMode = chaos;
+        }
         private void Start()
         {
             Unbound.RegisterCredits(ModName, new String[] {"Ascyst (Project creation)", "Pykess (Code)"}, "github", "https://github.com/Ascyst/MapEmbiggener");
@@ -129,14 +143,6 @@ namespace MapEmbiggener
             }
             GUILayout.EndHorizontal();
 
-        }
-
-        private void OnHandShakeCompleted()
-        {
-            if (PhotonNetwork.IsMasterClient)
-            {
-                    NetworkingManager.RaiseEventOthers(NetworkEventType.SyncSize, setSize);
-            }
         }
 
         private IEnumerator StartPickPhaseCamera()
