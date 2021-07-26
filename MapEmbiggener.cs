@@ -34,7 +34,8 @@ namespace MapEmbiggener
         public static bool suddenDeathMode = false;
         public static bool chaosMode = false;
 
-        internal static readonly float shrinkRate = 0.9999f;
+        internal static readonly float shrinkRate = 0.998f;
+        internal static readonly float shrinkDelay = 0.05f;
 
         private Toggle suddenDeathModeToggle;
         private Toggle chaosModeToggle;
@@ -225,14 +226,19 @@ namespace MapEmbiggener
                 Unbound.Instance.StartCoroutine(GameModes(__instance));
             });
         }
-
+        private static float timerStart;
         private static System.Collections.IEnumerator GameModes(Map instance)
         {
+            timerStart = Time.time;
             while (instance.enabled)
             {
                 if ((float)Traverse.Create(instance).Field("counter").GetValue() > 2f && instance.size > 1f && (MapEmbiggener.chaosMode || (MapEmbiggener.suddenDeathMode && CountPlayersAlive() <= 2)))
                 {
-                    instance.size *= MapEmbiggener.shrinkRate;
+                    if (Time.time > timerStart + MapEmbiggener.shrinkDelay)
+                    {
+                        timerStart = Time.time;
+                        instance.size *= MapEmbiggener.shrinkRate;
+                    }
                 }
                 yield return null;
             }
@@ -332,12 +338,12 @@ namespace MapEmbiggener
                     {
                         ((ChildRPC)Traverse.Create(__instance).Field("rpc").GetValue()).CallFunction("ShieldOutOfBounds");
                         Traverse.Create(data.playerVel).Field("velocity").SetValue((Vector2)Traverse.Create(data.playerVel).Field("velocity").GetValue() * 0f);
-                        data.healthHandler.CallTakeForce(__instance.transform.up * 400f * (float)Traverse.Create(data.playerVel).Field("mass").GetValue(), ForceMode2D.Impulse, false, true, 0f);
+                        data.healthHandler.CallTakeForce(__instance.transform.up * 400f * (MapManager.instance.currentMap.Map.size / 20f) * (float)Traverse.Create(data.playerVel).Field("mass").GetValue(), ForceMode2D.Impulse, false, true, 0f);
                         data.transform.position = __instance.transform.position;
                         return false; // skip the original (BAD IDEA)
                     }
                     ((ChildRPC)Traverse.Create(__instance).Field("rpc").GetValue()).CallFunction("OutOfBounds");
-                    data.healthHandler.CallTakeForce(__instance.transform.up * 200f * (float)Traverse.Create(data.playerVel).Field("mass").GetValue(), ForceMode2D.Impulse, false, true, 0f);
+                    data.healthHandler.CallTakeForce(__instance.transform.up * 200f * (MapManager.instance.currentMap.Map.size/20f) * (float)Traverse.Create(data.playerVel).Field("mass").GetValue(), ForceMode2D.Impulse, false, true, 0f);
                     data.healthHandler.CallTakeDamage(51f * __instance.transform.up, data.transform.position, null, null, true);
                 }
             }
