@@ -169,10 +169,12 @@ namespace MapEmbiggener
     {
         private static void Postfix(Map __instance)
         {
-            __instance.GetComponentInChildren<SpawnPoint>().localStartPos *= MapEmbiggener.setSize;
+            foreach (SpawnPoint spawnPoint in __instance.GetComponentsInChildren<SpawnPoint>())
+            {
+                spawnPoint.localStartPos *= MapEmbiggener.setSize;
+            }
             __instance.transform.localScale *= MapEmbiggener.setSize;
             __instance.size *= MapEmbiggener.setSize;
-
         }
     }
 
@@ -219,7 +221,7 @@ namespace MapEmbiggener
                 {
                     foreach (Transform transform in Rendering.GetComponentsInChildren<Transform>(true))
                     {
-                        transform.localScale = Vector3.one * MapEmbiggener.setSize;
+                        transform.localScale *= UnityEngine.Mathf.Clamp(MapEmbiggener.setSize, 0.1f, 2f);
                     }
                 }
 
