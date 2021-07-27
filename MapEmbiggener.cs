@@ -221,7 +221,7 @@ namespace MapEmbiggener
                 {
                     foreach (Transform transform in Rendering.GetComponentsInChildren<Transform>(true))
                     {
-                        transform.localScale *= UnityEngine.Mathf.Clamp(MapEmbiggener.setSize, 0.1f, 2f);
+                        transform.localScale = Vector3.one * UnityEngine.Mathf.Clamp(MapEmbiggener.setSize, 0.1f, 2f);
                     }
                 }
 
