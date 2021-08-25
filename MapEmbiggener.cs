@@ -18,7 +18,7 @@ using UnityEngine.UI;
 namespace MapEmbiggener
 {
     [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin(ModId, ModName, "1.0.0")]
+    [BepInPlugin(ModId, ModName, "1.2.0")]
     [BepInProcess("Rounds.exe")]
     public class MapEmbiggener : BaseUnityPlugin
     {
@@ -26,60 +26,101 @@ namespace MapEmbiggener
         {
             public const string SyncModSettings = ModId + "_Sync";
         }
-        private const string ModId = "com.ascyst.rounds.mapembiggener";
+        private const string ModId = "pykess.rounds.plugins.mapembiggener";
 
         private const string ModName = "Map Embiggener";
 
-        public static float setSize = 1.0f;
-        public static bool suddenDeathMode = false;
-        public static bool chaosMode = false;
+        internal static float setSize = 1.0f;
+        internal static bool suddenDeathMode = false;
+        internal static bool chaosMode = false;
 
-        internal static readonly float shrinkRate = 0.998f;
+        internal static float settingsSetSize = 1.0f;
+        internal static bool settingsSuddenDeathMode = false;
+        internal static bool settingsChaosMode = false;
+
+        internal static float shrinkRate;
+
+        internal static readonly float rotationRate = 0.1f;
+        internal static float rotationDirection = 1f;
+        internal static readonly float rotationDelay = 0.05f;
+        private static readonly float defaultShrinkRate = 0.998f;
         internal static readonly float shrinkDelay = 0.05f;
+
+        internal static float defaultMapSize;
+
+        internal static Interface.ChangeUntil restoreSettingsOn;
 
         private Toggle suddenDeathModeToggle;
         private Toggle chaosModeToggle;
 
         private void Awake()
         {
+            MapEmbiggener.shrinkRate = MapEmbiggener.defaultShrinkRate;
+            MapEmbiggener.restoreSettingsOn = Interface.ChangeUntil.Forever;
+
             new Harmony(ModId).PatchAll();
             Unbound.RegisterHandshake(NetworkEventType.SyncModSettings, OnHandShakeCompleted);
         }
-        private void OnHandShakeCompleted()
+        internal static void OnHandShakeCompleted()
         {
-            if (PhotonNetwork.IsMasterClient)
+            if (PhotonNetwork.OfflineMode || PhotonNetwork.IsMasterClient)
             {
-                NetworkingManager.RPC_Others(typeof(MapEmbiggener), nameof(SyncSettings), new object[] { MapEmbiggener.setSize, MapEmbiggener.suddenDeathMode, MapEmbiggener.chaosMode });
+                MapEmbiggener.restoreSettingsOn = Interface.ChangeUntil.Forever;
+
+                NetworkingManager.RPC_Others(typeof(MapEmbiggener), nameof(SyncSettings), new object[] { MapEmbiggener.settingsSetSize, MapEmbiggener.settingsSuddenDeathMode, MapEmbiggener.settingsChaosMode });
+                NetworkingManager.RPC(typeof(MapEmbiggener), nameof(SyncCurrentOptions), new object[] { MapEmbiggener.settingsSetSize, MapEmbiggener.settingsSuddenDeathMode, MapEmbiggener.settingsChaosMode, MapEmbiggener.defaultShrinkRate, MapEmbiggener.restoreSettingsOn });
             }
         }
 
         [UnboundRPC]
         private static void SyncSettings(float setSize, bool suddenDeath, bool chaos)
         {
+            MapEmbiggener.settingsSetSize = setSize;
+            MapEmbiggener.settingsSuddenDeathMode = suddenDeath;
+            MapEmbiggener.settingsChaosMode = chaos;
+        }
+        [UnboundRPC]
+        internal static void SyncCurrentOptions(float setSize, bool suddenDeath, bool chaos, float rate, Interface.ChangeUntil restore)
+        {
             MapEmbiggener.setSize = setSize;
             MapEmbiggener.suddenDeathMode = suddenDeath;
             MapEmbiggener.chaosMode = chaos;
+            MapEmbiggener.shrinkRate = rate;
+            MapEmbiggener.restoreSettingsOn = restore;
         }
         private void Start()
         {
-            Unbound.RegisterCredits(ModName, new String[] {"Ascyst (Project creation)", "Pykess (Code)"}, "github", "https://github.com/Ascyst/MapEmbiggener");
+            Unbound.RegisterCredits(ModName, new String[] {"Pykess (Code)", "Ascyst (Project creation)"}, new string[] { "github", "buy pykess a coffee", "buy ascyst a coffee" }, new string[] { "https://github.com/Ascyst/MapEmbiggener", "https://www.buymeacoffee.com/Pykess", "https://www.buymeacoffee.com/Ascyst" });
             Unbound.RegisterHandshake(ModId, OnHandShakeCompleted);
-            Unbound.RegisterMenu(ModName, () => { }, NewGUI);
+            Unbound.RegisterMenu(ModName, () => { }, NewGUI, null, true);
 
             GameModeManager.AddHook(GameModeHooks.HookPickStart, (gm) => this.StartPickPhaseCamera());
             GameModeManager.AddHook(GameModeHooks.HookPickEnd, (gm) => this.EndPickPhaseCamera());
+
+            GameModeManager.AddHook(GameModeHooks.HookPointEnd, this.FlipRotationDirection);
+
+            GameModeManager.AddHook(GameModeHooks.HookPickStart, this.ResetCamera);
+
+            GameModeManager.AddHook(GameModeHooks.HookPickEnd, Interface.PickEnd);
+            GameModeManager.AddHook(GameModeHooks.HookPointEnd, Interface.PointEnd);
+            GameModeManager.AddHook(GameModeHooks.HookGameEnd, Interface.GameEnd);
+            GameModeManager.AddHook(GameModeHooks.HookGameStart, ResetRotationDirection);
+            GameModeManager.AddHook(GameModeHooks.HookRoundEnd, Interface.RoundEnd);
+        }
+        private IEnumerator ResetRotationDirection(IGameModeHandler gm)
+        {
+            MapEmbiggener.rotationDirection = 1f;
+            yield break;
         }
         private void NewGUI(GameObject menu)
         {
-
-
             MenuHandler.CreateText("Map Embiggener Options", menu, out TextMeshProUGUI _);
             MenuHandler.CreateText(" ", menu, out TextMeshProUGUI _, 30);
             MenuHandler.CreateText(" ", menu, out TextMeshProUGUI warning, 30, true, Color.red);
             MenuHandler.CreateText(" ", menu, out TextMeshProUGUI _, 30);
             void SliderChangedAction(float val)
             {
-                MapEmbiggener.setSize = val;
+                MapEmbiggener.settingsSetSize = val;
                 if (val > 2f)
                 {
                     warning.text = "warning: scaling maps beyond 2× can cause gameplay difficulties and visual glitches".ToUpper();
@@ -92,71 +133,63 @@ namespace MapEmbiggener
                 {
                     warning.text = " ";
                 }
+                OnHandShakeCompleted();
             }
-            MenuHandler.CreateSlider("Map Size Multiplier", menu, 60, 0.5f, 3f, setSize, SliderChangedAction, out UnityEngine.UI.Slider slider);
+            MenuHandler.CreateSlider("Map Size Multiplier", menu, 60, 0.5f, 3f, settingsSetSize, SliderChangedAction, out UnityEngine.UI.Slider slider);
             void ResetButton()
             {
                 slider.value = 1f;
                 SliderChangedAction(1f);
+                OnHandShakeCompleted();
             }
             MenuHandler.CreateButton("Reset Multiplier", menu, ResetButton, 30);
             void SuddenDeathModeCheckbox(bool flag)
             {
-                MapEmbiggener.suddenDeathMode = flag;
-                if (MapEmbiggener.chaosMode && MapEmbiggener.suddenDeathMode)
+                MapEmbiggener.settingsSuddenDeathMode = flag;
+                if (MapEmbiggener.settingsChaosMode && MapEmbiggener.settingsSuddenDeathMode)
                 {
-                    MapEmbiggener.chaosMode = false;
+                    MapEmbiggener.settingsChaosMode = false;
                     chaosModeToggle.isOn = false;
                 }
+                OnHandShakeCompleted();
             }
-            suddenDeathModeToggle = MenuHandler.CreateToggle(MapEmbiggener.suddenDeathMode, "Sudden Death Mode", menu, SuddenDeathModeCheckbox, 60).GetComponent<Toggle>();
+            suddenDeathModeToggle = MenuHandler.CreateToggle(MapEmbiggener.settingsSuddenDeathMode, "Sudden Death Mode", menu, SuddenDeathModeCheckbox, 60).GetComponent<Toggle>();
             void ChaosModeCheckbox(bool flag)
             {
-                MapEmbiggener.chaosMode = flag;
-                if (MapEmbiggener.chaosMode && MapEmbiggener.suddenDeathMode)
+                MapEmbiggener.settingsChaosMode = flag;
+                if (MapEmbiggener.settingsChaosMode && MapEmbiggener.settingsSuddenDeathMode)
                 {
-                    MapEmbiggener.suddenDeathMode = false;
+                    MapEmbiggener.settingsSuddenDeathMode = false;
                     suddenDeathModeToggle.isOn = false;
                 }
+                OnHandShakeCompleted();
             }
-            chaosModeToggle = MenuHandler.CreateToggle(MapEmbiggener.chaosMode, "Chaos Mode", menu, ChaosModeCheckbox, 60).GetComponent<Toggle>();
-
-
-        }
-        private void DrawGUI()
-        {
-            GUILayout.Label("Current Map Size: x" + setSize);
-            GUILayout.FlexibleSpace();
-            GUILayout.Label("Set Map Size To:");
-            GUILayout.FlexibleSpace();
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("x1.5"))
-            {
-                setSize = 1.5f;
-            }
-            if (GUILayout.Button("x2.0"))
-            {
-                setSize = 2.0f;
-            }
-            if (GUILayout.Button("Default"))
-            {
-                setSize = 1.0f;
-            }
-            GUILayout.EndHorizontal();
-
+            chaosModeToggle = MenuHandler.CreateToggle(MapEmbiggener.settingsChaosMode, "Chaos Mode", menu, ChaosModeCheckbox, 60).GetComponent<Toggle>();
         }
 
         private IEnumerator StartPickPhaseCamera()
         {
-            MapManager.instance.currentMap.Map.size /= MapEmbiggener.setSize;
+            MapManager.instance.currentMap.Map.size = MapEmbiggener.defaultMapSize;
 
             yield break;
         }
         private IEnumerator EndPickPhaseCamera()
         {
-            MapManager.instance.currentMap.Map.size *= MapEmbiggener.setSize;
+            MapManager.instance.currentMap.Map.size = MapEmbiggener.defaultMapSize * MapEmbiggener.setSize;
 
             yield return new WaitForSecondsRealtime(0.1f);
+
+            yield break;
+        }
+
+        private IEnumerator FlipRotationDirection(IGameModeHandler gm)
+        {
+            MapEmbiggener.rotationDirection *= -1f;
+            yield break;
+        }
+        private IEnumerator ResetCamera(IGameModeHandler gm)
+        {
+            Interface.MoveCamera(new Vector3(0f, 0f, -100f), 0f);
 
             yield break;
         }
@@ -169,6 +202,8 @@ namespace MapEmbiggener
     {
         private static void Postfix(Map __instance)
         {
+            MapEmbiggener.defaultMapSize = __instance.size;
+
             foreach (SpawnPoint spawnPoint in __instance.GetComponentsInChildren<SpawnPoint>())
             {
                 spawnPoint.localStartPos *= MapEmbiggener.setSize;
@@ -229,9 +264,11 @@ namespace MapEmbiggener
             });
         }
         private static float timerStart;
+        private static float rotTimerStart;
         private static System.Collections.IEnumerator GameModes(Map instance)
         {
             timerStart = Time.time;
+            rotTimerStart = Time.time;
             while (instance.enabled)
             {
                 if ((float)Traverse.Create(instance).Field("counter").GetValue() > 2f && instance.size > 1f && (MapEmbiggener.chaosMode || (MapEmbiggener.suddenDeathMode && CountPlayersAlive() <= 2)))
@@ -240,6 +277,15 @@ namespace MapEmbiggener
                     {
                         timerStart = Time.time;
                         instance.size *= MapEmbiggener.shrinkRate;
+                    }
+                }
+                if ((float)Traverse.Create(instance).Field("counter").GetValue() > 2f && instance.size > 1f && MapEmbiggener.chaosMode)
+                {
+                    if (Time.time > rotTimerStart + MapEmbiggener.rotationDelay)
+                    {
+                        rotTimerStart = Time.time;
+                        Vector3 currentRot = Interface.GetCameraRot().eulerAngles;
+                        Interface.MoveCamera(angle: currentRot.z + MapEmbiggener.rotationDirection * MapEmbiggener.rotationRate);
                     }
                 }
                 yield return null;
