@@ -1,6 +1,12 @@
 # Map Embiggener
 -------------------
 
+### v1.2.1
+----------
+
+- Fixed map desync issue
+- Settings now save
+
 ### New in v1.2.0
 -----------------
 

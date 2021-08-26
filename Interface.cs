@@ -41,6 +41,12 @@ namespace MapEmbiggener
             }
 
         }
+        public static IEnumerator RestoreDefaults()
+        {
+            MapEmbiggener.OnHandShakeCompleted();
+            ApplyNewMapSize(MapEmbiggener.settingsSetSize, false);
+            yield return new WaitForSecondsRealtime(1f);
+        }
         private static IEnumerator WaitToRestore(float duration)
         {
             float startTime = Time.time;
@@ -116,7 +122,7 @@ namespace MapEmbiggener
         {
             if (MapEmbiggener.restoreSettingsOn == ChangeUntil.BattleEnd)
             {
-                MapEmbiggener.OnHandShakeCompleted();
+                yield return RestoreDefaults();
             }
 
             yield break;
@@ -125,7 +131,7 @@ namespace MapEmbiggener
         {
             if (MapEmbiggener.restoreSettingsOn == ChangeUntil.RoundEnd)
             {
-                MapEmbiggener.OnHandShakeCompleted();
+                yield return RestoreDefaults();
             }
 
             yield break;
@@ -134,7 +140,7 @@ namespace MapEmbiggener
         {
             if (MapEmbiggener.restoreSettingsOn == ChangeUntil.PickEnd)
             {
-                MapEmbiggener.OnHandShakeCompleted();
+                yield return RestoreDefaults();
             }
 
             yield break;
@@ -143,7 +149,7 @@ namespace MapEmbiggener
         {
             if (MapEmbiggener.restoreSettingsOn == ChangeUntil.GameEnd)
             {
-                MapEmbiggener.OnHandShakeCompleted();
+                yield return RestoreDefaults();
             }
 
             yield break;

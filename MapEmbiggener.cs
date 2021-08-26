@@ -14,14 +14,19 @@ using UnboundLib.Utils.UI;
 using TMPro;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using BepInEx.Configuration;
 
 namespace MapEmbiggener
 {
     [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin(ModId, ModName, "1.2.0")]
+    [BepInPlugin(ModId, ModName, "1.2.1")]
     [BepInProcess("Rounds.exe")]
     public class MapEmbiggener : BaseUnityPlugin
     {
+        public static ConfigEntry<float> SizeConfig;
+        public static ConfigEntry<bool> ChaosConfig;
+        public static ConfigEntry<bool> SuddenDeathConfig;
+
         private struct NetworkEventType
         {
             public const string SyncModSettings = ModId + "_Sync";
@@ -58,6 +63,11 @@ namespace MapEmbiggener
             MapEmbiggener.shrinkRate = MapEmbiggener.defaultShrinkRate;
             MapEmbiggener.restoreSettingsOn = Interface.ChangeUntil.Forever;
 
+            // bind configs with BepInEx
+            SizeConfig = Config.Bind("MapEmbiggener", "Size", 1f, "Size to scale maps to");
+            SuddenDeathConfig = Config.Bind("MapEmbiggener", "SuddenDeathMode", false, "Enable Sudden Death mode");
+            ChaosConfig = Config.Bind("MapEmbiggener", "ChaosMode", false, "Enable Chaos mode");
+
             new Harmony(ModId).PatchAll();
             Unbound.RegisterHandshake(NetworkEventType.SyncModSettings, OnHandShakeCompleted);
         }
@@ -90,6 +100,14 @@ namespace MapEmbiggener
         }
         private void Start()
         {
+            // load settings
+            MapEmbiggener.settingsSetSize = MapEmbiggener.SizeConfig.Value;
+            MapEmbiggener.settingsSuddenDeathMode = MapEmbiggener.SuddenDeathConfig.Value;
+            MapEmbiggener.settingsChaosMode = MapEmbiggener.ChaosConfig.Value;
+            MapEmbiggener.setSize = MapEmbiggener.SizeConfig.Value;
+            MapEmbiggener.suddenDeathMode = MapEmbiggener.SuddenDeathConfig.Value;
+            MapEmbiggener.chaosMode = MapEmbiggener.ChaosConfig.Value;
+
             Unbound.RegisterCredits(ModName, new String[] {"Pykess (Code)", "Ascyst (Project creation)"}, new string[] { "github", "buy pykess a coffee", "buy ascyst a coffee" }, new string[] { "https://github.com/Ascyst/MapEmbiggener", "https://www.buymeacoffee.com/Pykess", "https://www.buymeacoffee.com/Ascyst" });
             Unbound.RegisterHandshake(ModId, OnHandShakeCompleted);
             Unbound.RegisterMenu(ModName, () => { }, NewGUI, null, true);
@@ -121,6 +139,8 @@ namespace MapEmbiggener
             void SliderChangedAction(float val)
             {
                 MapEmbiggener.settingsSetSize = val;
+                MapEmbiggener.SizeConfig.Value = val;
+                MapEmbiggener.setSize = val;
                 if (val > 2f)
                 {
                     warning.text = "warning: scaling maps beyond 2× can cause gameplay difficulties and visual glitches".ToUpper();
@@ -135,7 +155,7 @@ namespace MapEmbiggener
                 }
                 OnHandShakeCompleted();
             }
-            MenuHandler.CreateSlider("Map Size Multiplier", menu, 60, 0.5f, 3f, settingsSetSize, SliderChangedAction, out UnityEngine.UI.Slider slider);
+            MenuHandler.CreateSlider("Map Size Multiplier", menu, 60, 0.5f, 3f, SizeConfig.Value, SliderChangedAction, out UnityEngine.UI.Slider slider);
             void ResetButton()
             {
                 slider.value = 1f;
@@ -143,28 +163,23 @@ namespace MapEmbiggener
                 OnHandShakeCompleted();
             }
             MenuHandler.CreateButton("Reset Multiplier", menu, ResetButton, 30);
-            void SuddenDeathModeCheckbox(bool flag)
+            void suddenDeathModeToggleAction(bool flag)
             {
-                MapEmbiggener.settingsSuddenDeathMode = flag;
-                if (MapEmbiggener.settingsChaosMode && MapEmbiggener.settingsSuddenDeathMode)
-                {
-                    MapEmbiggener.settingsChaosMode = false;
-                    chaosModeToggle.isOn = false;
-                }
+                MapEmbiggener.SuddenDeathConfig.Value = flag;
+                MapEmbiggener.suddenDeathMode = MapEmbiggener.SuddenDeathConfig.Value;
+                MapEmbiggener.settingsSuddenDeathMode = MapEmbiggener.SuddenDeathConfig.Value;
                 OnHandShakeCompleted();
             }
-            suddenDeathModeToggle = MenuHandler.CreateToggle(MapEmbiggener.settingsSuddenDeathMode, "Sudden Death Mode", menu, SuddenDeathModeCheckbox, 60).GetComponent<Toggle>();
-            void ChaosModeCheckbox(bool flag)
+            void chaosModeToggleAction(bool flag)
             {
-                MapEmbiggener.settingsChaosMode = flag;
-                if (MapEmbiggener.settingsChaosMode && MapEmbiggener.settingsSuddenDeathMode)
-                {
-                    MapEmbiggener.settingsSuddenDeathMode = false;
-                    suddenDeathModeToggle.isOn = false;
-                }
+                MapEmbiggener.ChaosConfig.Value = flag;
+                MapEmbiggener.chaosMode = MapEmbiggener.ChaosConfig.Value;
+                MapEmbiggener.settingsChaosMode = MapEmbiggener.ChaosConfig.Value;
                 OnHandShakeCompleted();
             }
-            chaosModeToggle = MenuHandler.CreateToggle(MapEmbiggener.settingsChaosMode, "Chaos Mode", menu, ChaosModeCheckbox, 60).GetComponent<Toggle>();
+            suddenDeathModeToggle = MenuHandler.CreateToggle(MapEmbiggener.SuddenDeathConfig.Value, "Sudden Death Mode", menu, suddenDeathModeToggleAction, 60).GetComponent<Toggle>();
+            chaosModeToggle = MenuHandler.CreateToggle(MapEmbiggener.ChaosConfig.Value, "Chaos Mode", menu, chaosModeToggleAction, 60).GetComponent<Toggle>();
+
         }
 
         private IEnumerator StartPickPhaseCamera()
