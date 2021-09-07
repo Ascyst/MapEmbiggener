@@ -59,6 +59,7 @@ namespace MapEmbiggener
         }
         internal static void ApplyNewMapSize(float size, bool zoomOnly)
         {
+
             if (PhotonNetwork.OfflineMode || PhotonNetwork.IsMasterClient)
             {
                 NetworkingManager.RPC(typeof(Interface), nameof(RPCA_ApplyNewMapSize), new object[] { size, zoomOnly });
@@ -117,6 +118,24 @@ namespace MapEmbiggener
                     }
                 }
             });
+        }
+        internal static IEnumerator BattleStart(IGameModeHandler gm)
+        {
+            if (MapEmbiggener.restoreSettingsOn == ChangeUntil.BattleStart)
+            {
+                yield return RestoreDefaults();
+            }
+
+            yield break;
+        }
+        internal static IEnumerator PointStart(IGameModeHandler gm)
+        {
+            if (MapEmbiggener.restoreSettingsOn == ChangeUntil.PointStart)
+            {
+                yield return RestoreDefaults();
+            }
+
+            yield break;
         }
         internal static IEnumerator PointEnd(IGameModeHandler gm)
         {
@@ -190,6 +209,8 @@ namespace MapEmbiggener
 
         public enum ChangeUntil
         {
+            BattleStart,
+            PointStart,
             BattleEnd,
             RoundEnd,
             PickEnd,

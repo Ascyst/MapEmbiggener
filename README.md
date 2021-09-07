@@ -1,6 +1,11 @@
 # Map Embiggener
 -------------------
 
+### v1.2.2
+----------
+
+- Fixed compatibility issues with Pick N Cards
+
 ### v1.2.1
 ----------
 

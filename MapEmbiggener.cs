@@ -19,7 +19,7 @@ using BepInEx.Configuration;
 namespace MapEmbiggener
 {
     [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin(ModId, ModName, "1.2.1")]
+    [BepInPlugin(ModId, ModName, "1.2.2")]
     [BepInProcess("Rounds.exe")]
     public class MapEmbiggener : BaseUnityPlugin
     {
@@ -112,18 +112,29 @@ namespace MapEmbiggener
             Unbound.RegisterHandshake(ModId, OnHandShakeCompleted);
             Unbound.RegisterMenu(ModName, () => { }, NewGUI, null, true);
 
+            // disable zooming during entire pick phase
+            GameModeManager.AddHook(GameModeHooks.HookPickStart, (gm) => this.SetZoomModes(gm, false));
+            GameModeManager.AddHook(GameModeHooks.HookPlayerPickStart, (gm) => this.SetZoomModes(gm, false));
+            // re-enable zooming when point starts
+            GameModeManager.AddHook(GameModeHooks.HookPointStart, (gm) => this.SetZoomModes(gm, true));
+
+            // set camera zoom level for pick phase
             GameModeManager.AddHook(GameModeHooks.HookPickStart, (gm) => this.StartPickPhaseCamera());
             GameModeManager.AddHook(GameModeHooks.HookPickEnd, (gm) => this.EndPickPhaseCamera());
 
             GameModeManager.AddHook(GameModeHooks.HookPointEnd, this.FlipRotationDirection);
 
             GameModeManager.AddHook(GameModeHooks.HookPickStart, this.ResetCamera);
+            // reset camera on point end so that players next round aren't spawned OOB
+            GameModeManager.AddHook(GameModeHooks.HookPointEnd, (gm) => this.ResetCameraAfter(gm, 1f));
 
             GameModeManager.AddHook(GameModeHooks.HookPickEnd, Interface.PickEnd);
             GameModeManager.AddHook(GameModeHooks.HookPointEnd, Interface.PointEnd);
             GameModeManager.AddHook(GameModeHooks.HookGameEnd, Interface.GameEnd);
             GameModeManager.AddHook(GameModeHooks.HookGameStart, ResetRotationDirection);
             GameModeManager.AddHook(GameModeHooks.HookRoundEnd, Interface.RoundEnd);
+            GameModeManager.AddHook(GameModeHooks.HookBattleStart, Interface.BattleStart);
+            GameModeManager.AddHook(GameModeHooks.HookPointStart, Interface.PointStart);
         }
         private IEnumerator ResetRotationDirection(IGameModeHandler gm)
         {
@@ -181,7 +192,24 @@ namespace MapEmbiggener
             chaosModeToggle = MenuHandler.CreateToggle(MapEmbiggener.ChaosConfig.Value, "Chaos Mode", menu, chaosModeToggleAction, 60).GetComponent<Toggle>();
 
         }
+        private IEnumerator SetZoomModes(IGameModeHandler gm, bool enable)
+        {
+            // disable zoom modes
+            if (!enable)
+            {
+                MapEmbiggener.chaosMode = false;
+                MapEmbiggener.suddenDeathMode = false;
+                yield return ResetCamera(gm);
+            }
+            // restore settings
+            else
+            {
+                MapEmbiggener.chaosMode = MapEmbiggener.settingsChaosMode;
+                MapEmbiggener.suddenDeathMode = MapEmbiggener.settingsSuddenDeathMode;
+            }
 
+            yield break;
+        }
         private IEnumerator StartPickPhaseCamera()
         {
             MapManager.instance.currentMap.Map.size = MapEmbiggener.defaultMapSize;
@@ -190,7 +218,7 @@ namespace MapEmbiggener
         }
         private IEnumerator EndPickPhaseCamera()
         {
-            MapManager.instance.currentMap.Map.size = MapEmbiggener.defaultMapSize * MapEmbiggener.setSize;
+            MapManager.instance.currentMap.Map.size = MapEmbiggener.defaultMapSize * MapEmbiggener.settingsSetSize;
 
             yield return new WaitForSecondsRealtime(0.1f);
 
@@ -204,8 +232,15 @@ namespace MapEmbiggener
         }
         private IEnumerator ResetCamera(IGameModeHandler gm)
         {
+
             Interface.MoveCamera(new Vector3(0f, 0f, -100f), 0f);
 
+            yield break;
+        }
+        private IEnumerator ResetCameraAfter(IGameModeHandler gm, float delay)
+        {
+            yield return new WaitForSecondsRealtime(0.5f);
+            yield return ResetCamera(gm);
             yield break;
         }
 
