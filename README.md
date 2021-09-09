@@ -1,6 +1,11 @@
 # Map Embiggener
 -------------------
 
+### v1.2.3
+----------
+
+- Improved compatibility with PickNCards
+
 ### v1.2.2
 ----------
 

@@ -19,7 +19,7 @@ using BepInEx.Configuration;
 namespace MapEmbiggener
 {
     [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin(ModId, ModName, "1.2.2")]
+    [BepInPlugin(ModId, ModName, "1.2.3")]
     [BepInProcess("Rounds.exe")]
     public class MapEmbiggener : BaseUnityPlugin
     {
@@ -213,6 +213,8 @@ namespace MapEmbiggener
         private IEnumerator StartPickPhaseCamera()
         {
             MapManager.instance.currentMap.Map.size = MapEmbiggener.defaultMapSize;
+
+            yield return new WaitForSecondsRealtime(1.5f);
 
             yield break;
         }

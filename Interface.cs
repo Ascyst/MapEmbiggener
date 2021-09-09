@@ -19,6 +19,10 @@ namespace MapEmbiggener
 {
     public static class Interface
     {
+        public static float GetCurrentSetSize()
+        {
+            return MapEmbiggener.setSize;
+        }
         public static void ChangeOptions(float? size = null, bool? suddenDeath = null, bool? chaos = null, float? shrinkRate = null, bool zoomOnly = true, bool apply = true, ChangeUntil changeUntil = ChangeUntil.Forever, float duration = 0f)
         {
             float Size = size ?? MapEmbiggener.setSize;
@@ -41,10 +45,10 @@ namespace MapEmbiggener
             }
 
         }
-        public static IEnumerator RestoreDefaults()
+        public static IEnumerator RestoreDefaults(bool zoomOnly = false, bool apply = true)
         {
             MapEmbiggener.OnHandShakeCompleted();
-            ApplyNewMapSize(MapEmbiggener.settingsSetSize, false);
+            if (apply) { ApplyNewMapSize(MapEmbiggener.settingsSetSize, zoomOnly); }
             yield return new WaitForSecondsRealtime(1f);
         }
         private static IEnumerator WaitToRestore(float duration)
