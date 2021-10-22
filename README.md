@@ -1,6 +1,14 @@
 # Map Embiggener
 -------------------
 
+### v1.2.4
+----------
+
+- Various bugfixes:
+    - Support for the new Stickfight maps
+    - Fixed OutOfBoundsHandler not working during the RWF countdown
+    - Fixed issues with players using non-16-by-9 ratio displays
+
 ### v1.2.3
 ----------
 

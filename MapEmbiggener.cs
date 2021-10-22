@@ -19,10 +19,13 @@ using BepInEx.Configuration;
 namespace MapEmbiggener
 {
     [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin(ModId, ModName, "1.2.3")]
+    [BepInPlugin(ModId, ModName, "1.2.4")]
     [BepInProcess("Rounds.exe")]
     public class MapEmbiggener : BaseUnityPlugin
     {
+        internal static readonly string[] stickFightObjsToIgnore = new string[] { "Real", "Chain", "PLatform", "TreadMill", "Spike(Spike)"};
+        internal static readonly string[] stickFightSpawnerObjs = new string[] {"(Pusher)(Clone)", "Box(Clone)(Clone)" };
+
         public static ConfigEntry<float> SizeConfig;
         public static ConfigEntry<bool> ChaosConfig;
         public static ConfigEntry<bool> SuddenDeathConfig;
@@ -265,6 +268,59 @@ namespace MapEmbiggener
         }
     }
 
+    public static class StringExtension
+    {
+        public static bool ContainsAny(this string str, params string[] substrings)
+        {
+            foreach (string substr in substrings)
+            {
+                if (str.Contains(substr))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    internal static class GameObjectExtension
+    {
+        internal static bool IsStickFightObject(this GameObject obj, int depth = 2)
+        {
+            if (obj == null) { return false; }
+            Transform transform = obj.transform;
+            for (int i = 0; i < depth; i++)
+            {
+                if (transform == null) { break; }
+
+                if (transform.gameObject.name.ContainsAny(MapEmbiggener.stickFightObjsToIgnore)) { return true; }
+
+                transform = transform.parent;
+
+            }
+            return false;
+        }
+    }
+    // patch for special stickfightmaps objects
+    [Serializable]
+    [HarmonyPatch(typeof(RemoveAfterSeconds),"Start")]
+    class RemoveAfterSecondsPatchStart
+    {
+        private static void Prefix(RemoveAfterSeconds __instance)
+        {
+            // if this object is a stickfightmaps spawner object, then scale it up and increase its timer
+            if (__instance.gameObject.name.ContainsAny(MapEmbiggener.stickFightSpawnerObjs) && !__instance.gameObject.name.ContainsAny(MapEmbiggener.stickFightObjsToIgnore))
+            {
+                __instance.seconds *= MapEmbiggener.setSize;
+                foreach (Rigidbody2D rig in __instance.gameObject.GetComponentsInChildren<Rigidbody2D>())
+                {
+                    //rig.mass *= MapEmbiggener.setSize;
+                    rig.transform.localScale *= MapEmbiggener.setSize;
+                }
+            }
+        }
+    }
+
     [Serializable]
     [HarmonyPatch(typeof(Map), "StartMatch")]
     class MapPatchStartMatch
@@ -273,15 +329,39 @@ namespace MapEmbiggener
         {
             Unbound.Instance.ExecuteAfterFrames(2, () =>
             {
+                // if a stickfightmaps object has any particlesystem components, then scale those up
+                foreach (ParticleSystem part in __instance.gameObject.GetComponentsInChildren<ParticleSystem>())
+                {
+                    if (part.gameObject.IsStickFightObject())
+                    {
+                        part.transform.localScale *= MapEmbiggener.setSize;
+                    }
+                }
                 foreach (Rigidbody2D rig in __instance.allRigs)
                 {
                     // rescale physics objects UNLESS they have a movesequence component
                     // also UNLESS they are a crate from stickfight (Boss Sloth's stickfight maps mod)
                     // if they have a movesequence component then scale the points in that component
 
-                    if (rig.gameObject.name.Contains("Real"))
+                    if (rig.gameObject.IsStickFightObject())
                     {
+
+                        if (rig.gameObject.name.Contains("PLatform"))
+                        {
+                            rig.transform.localScale /= MapEmbiggener.setSize;
+                        }
+
                         rig.mass *= MapEmbiggener.setSize;
+
+                        // increase the strength of chains
+                        if (rig.gameObject.name.Contains("Chain"))
+                        {
+                            if (rig.gameObject.GetComponent<ForceMultiplier>() != null) { rig.gameObject.GetComponent<ForceMultiplier>().multiplier *= MapEmbiggener.setSize; }
+                            foreach (DistanceJoint2D joint in rig.gameObject.GetComponents<DistanceJoint2D>())
+                            {
+                                joint.distance *= MapEmbiggener.setSize;
+                            }
+                        }
                         continue;
                     }
 
@@ -302,6 +382,7 @@ namespace MapEmbiggener
                         Traverse.Create(rig.gameObject.GetComponentInChildren<MoveSequence>()).Field("startPos").SetValue((Vector2)Traverse.Create(rig.gameObject.GetComponentInChildren<MoveSequence>()).Field("startPos").GetValue() * MapEmbiggener.setSize);
                     }
                 }
+
                 GameObject Rendering = UnityEngine.GameObject.Find("/Game/Visual/Rendering ");
 
                 if (Rendering != null)
@@ -319,6 +400,7 @@ namespace MapEmbiggener
         private static float rotTimerStart;
         private static System.Collections.IEnumerator GameModes(Map instance)
         {
+            if (instance == null) { yield break; }
             timerStart = Time.time;
             rotTimerStart = Time.time;
             while (instance.enabled)
@@ -350,25 +432,67 @@ namespace MapEmbiggener
         }
     }
 
+    // extension methods for dealing with ultrawide displays
+    internal static class CameraExtension
+    {
+        private static float correction => (Screen.width - FixedScreen.fixedWidth) / 2f;
+        internal static Vector3 FixedWorldToScreenPoint(this Camera camera, Vector3 worldPoint)
+        {
+            Vector3 fixedScreenPoint = camera.WorldToScreenPoint(worldPoint);
+            if (!FixedScreen.isUltraWide) { return fixedScreenPoint; }
+
+            return new Vector3(fixedScreenPoint.x - correction, fixedScreenPoint.y, fixedScreenPoint.z);
+        }
+        internal static Vector3 FixedScreenToWorldPoint(this Camera camera, Vector3 fixedScreenPoint)
+        {
+            Vector3 worldPoint = camera.ScreenToWorldPoint(fixedScreenPoint);
+            if (!FixedScreen.isUltraWide) { return worldPoint; }
+
+            return new Vector3(fixedScreenPoint.x + correction, fixedScreenPoint.y, fixedScreenPoint.z);
+        }
+    }
+    
+    // extension for dealing with ultrawide displays
+    internal static class FixedScreen
+    {
+        internal static bool isUltraWide => ((float)Screen.width / (float)Screen.height - ratio >= eps);
+        private const float ratio = 16f / 9f;
+        private const float eps = 1E-4f;
+        internal static int fixedWidth
+        {
+            get
+            {
+                if (isUltraWide)
+                {
+                    // widescreen (or at least nonstandard screen)
+                    // we assume the height is correct (since the game seems to scale to force the height to match)
+                    return (int)UnityEngine.Mathf.RoundToInt(Screen.height * ratio);
+                }
+                else
+                {
+                    return Screen.width;
+                }
+            }
+            private set { }
+        }
+    }
+
     [Serializable]
     [HarmonyPatch(typeof(OutOfBoundsHandler), "LateUpdate")]
     class OutOfBoundsHandlerPatchLateUpdate
     {
-        private static bool Prefix(OutOfBoundsHandler __instance)
+        private static bool Prefix(OutOfBoundsHandler __instance, CharacterData ___data, float ___warningPercentage, ref float ___counter, ref bool ___almostOutOfBounds, ref bool ___outOfBounds, ref ChildRPC ___rpc)
         {
-            CharacterData data = (CharacterData)Traverse.Create(__instance).Field("data").GetValue();
-            float warningPercentage = (float)Traverse.Create(__instance).Field("warningPercentage").GetValue();
-
-            if (!data)
+            if (!___data)
             {
                 UnityEngine.GameObject.Destroy(__instance.gameObject);
                 return false; // skip the original (BAD IDEA)
             }
-            if (!(bool)Traverse.Create(data.playerVel).Field("simulated").GetValue())
+            if (!(bool)Traverse.Create(___data.playerVel).Field("simulated").GetValue())
             {
-                return false; // skip the original (BAD IDEA)
+                //return false; // skip the original (BAD IDEA)
             }
-            if (!data.isPlaying)
+            if (!___data.isPlaying)
             {
                 return false; // skip the original (BAD IDEA)
             }
@@ -378,73 +502,73 @@ namespace MapEmbiggener
             Vector3 vector = new Vector3(x, y, 0f);
             vector = new Vector3(Mathf.Clamp(vector.x, 0f, 1f), Mathf.Clamp(vector.y, 0f, 1f), vector.z);
             */
-            Vector3 vector = MainCam.instance.transform.GetComponent<Camera>().WorldToScreenPoint(new Vector3(data.transform.position.x, data.transform.position.y, 0f));
+            Vector3 vector = MainCam.instance.transform.GetComponent<Camera>().FixedWorldToScreenPoint(new Vector3(___data.transform.position.x, ___data.transform.position.y, 0f));
 
-            vector.x /= (float)Screen.width;
+            vector.x /= (float)FixedScreen.fixedWidth;
             vector.y /= (float)Screen.height;
 
             vector = new Vector3(Mathf.Clamp01(vector.x), Mathf.Clamp01(vector.y), 0f);
 
-            Traverse.Create(__instance).Field("almostOutOfBounds").SetValue(false);
-            Traverse.Create(__instance).Field("outOfBounds").SetValue(false);
+            ___almostOutOfBounds = false;
+            ___outOfBounds = false;
             if (vector.x <= 0f || vector.x >= 1f || vector.y >= 1f || vector.y <= 0f)
             {
-                Traverse.Create(__instance).Field("outOfBounds").SetValue(true);
+                ___outOfBounds = true;
             }
-            else if (vector.x < warningPercentage || vector.x > 1f - warningPercentage || vector.y > 1f - warningPercentage || vector.y < warningPercentage)
+            else if (vector.x < ___warningPercentage || vector.x > 1f - ___warningPercentage || vector.y > 1f - ___warningPercentage || vector.y < ___warningPercentage)
             {
-                Traverse.Create(__instance).Field("almostOutOfBounds").SetValue(true);
-                if (vector.x < warningPercentage)
+                ___almostOutOfBounds = true;
+                if (vector.x < ___warningPercentage)
                 {
                     vector.x = 0f;
                 }
-                if (vector.x > 1f - warningPercentage)
+                if (vector.x > 1f - ___warningPercentage)
                 {
                     vector.x = 1f;
                 }
-                if (vector.y < warningPercentage)
+                if (vector.y < ___warningPercentage)
                 {
                     vector.y = 0f;
                 }
-                if (vector.y > 1f - warningPercentage)
+                if (vector.y > 1f - ___warningPercentage)
                 {
                     vector.y = 1f;
                 }
             }
-            Traverse.Create(__instance).Field("counter").SetValue((float)Traverse.Create(__instance).Field("counter").GetValue() + TimeHandler.deltaTime);
-            if ((bool)Traverse.Create(__instance).Field("almostOutOfBounds").GetValue() && !data.dead)
+            ___counter = ___counter + TimeHandler.deltaTime;
+            if (___almostOutOfBounds && !___data.dead)
             {
                 __instance.transform.position = (Vector3)typeof(OutOfBoundsHandler).InvokeMember("GetPoint",
                                                     BindingFlags.Instance | BindingFlags.InvokeMethod |
                                                     BindingFlags.NonPublic, null, __instance, new object[] { vector });
-                __instance.transform.rotation = Quaternion.LookRotation(Vector3.forward, -(data.transform.position - __instance.transform.position));
-                if ((float)Traverse.Create(__instance).Field("counter").GetValue() > 0.1f)
+                __instance.transform.rotation = Quaternion.LookRotation(Vector3.forward, -(___data.transform.position - __instance.transform.position));
+                if (___counter > 0.1f)
                 {
-                    Traverse.Create(__instance).Field("counter").SetValue(0f);
+                    ___counter = 0f;
                     __instance.warning.Play();
                 }
             }
-            if ((bool)Traverse.Create(__instance).Field("outOfBounds").GetValue() && !data.dead)
+            if (___outOfBounds && !___data.dead)
             {
-                data.sinceGrounded = 0f;
+                ___data.sinceGrounded = 0f;
                 __instance.transform.position = (Vector3)typeof(OutOfBoundsHandler).InvokeMember("GetPoint",
                                                     BindingFlags.Instance | BindingFlags.InvokeMethod |
                                                     BindingFlags.NonPublic, null, __instance, new object[] { vector });
-                __instance.transform.rotation = Quaternion.LookRotation(Vector3.forward, -(data.transform.position - __instance.transform.position));
-                if ((float)Traverse.Create(__instance).Field("counter").GetValue() > 0.1f && data.view.IsMine)
+                __instance.transform.rotation = Quaternion.LookRotation(Vector3.forward, -(___data.transform.position - __instance.transform.position));
+                if (___counter > 0.1f && ___data.view.IsMine)
                 {
-                    Traverse.Create(__instance).Field("counter").SetValue(0f);
-                    if (data.block.IsBlocking())
+                    ___counter = 0f;
+                    if (___data.block.IsBlocking())
                     {
-                        ((ChildRPC)Traverse.Create(__instance).Field("rpc").GetValue()).CallFunction("ShieldOutOfBounds");
-                        Traverse.Create(data.playerVel).Field("velocity").SetValue((Vector2)Traverse.Create(data.playerVel).Field("velocity").GetValue() * 0f);
-                        data.healthHandler.CallTakeForce(__instance.transform.up * 400f * (MapManager.instance.currentMap.Map.size / 20f) * (float)Traverse.Create(data.playerVel).Field("mass").GetValue(), ForceMode2D.Impulse, false, true, 0f);
-                        data.transform.position = __instance.transform.position;
+                        ___rpc.CallFunction("ShieldOutOfBounds");
+                        Traverse.Create(___data.playerVel).Field("velocity").SetValue((Vector2)Traverse.Create(___data.playerVel).Field("velocity").GetValue() * 0f);
+                        ___data.healthHandler.CallTakeForce(__instance.transform.up * 400f * (MapManager.instance.currentMap.Map.size / 20f) * (float)Traverse.Create(___data.playerVel).Field("mass").GetValue(), ForceMode2D.Impulse, false, true, 0f);
+                        ___data.transform.position = __instance.transform.position;
                         return false; // skip the original (BAD IDEA)
                     }
-                    ((ChildRPC)Traverse.Create(__instance).Field("rpc").GetValue()).CallFunction("OutOfBounds");
-                    data.healthHandler.CallTakeForce(__instance.transform.up * 200f * (MapManager.instance.currentMap.Map.size/20f) * (float)Traverse.Create(data.playerVel).Field("mass").GetValue(), ForceMode2D.Impulse, false, true, 0f);
-                    data.healthHandler.CallTakeDamage(51f * __instance.transform.up, data.transform.position, null, null, true);
+                    ___rpc.CallFunction("OutOfBounds");
+                    ___data.healthHandler.CallTakeForce(__instance.transform.up * 200f * (MapManager.instance.currentMap.Map.size/20f) * (float)Traverse.Create(___data.playerVel).Field("mass").GetValue(), ForceMode2D.Impulse, false, true, 0f);
+                    ___data.healthHandler.CallTakeDamage(51f * __instance.transform.up, ___data.transform.position, null, null, true);
                 }
             }
             return false; // skip the original (BAD IDEA)
@@ -458,7 +582,7 @@ namespace MapEmbiggener
     {
         private static bool Prefix(ref Vector3 __result, OutOfBoundsHandler __instance, Vector3 p)
         {
-            Vector3 result = MainCam.instance.transform.GetComponent<Camera>().ScreenToWorldPoint(new Vector3(p.x * (float)Screen.width, p.y * (float)Screen.height, 0f));
+            Vector3 result = MainCam.instance.transform.GetComponent<Camera>().FixedScreenToWorldPoint(new Vector3(p.x * (float)FixedScreen.fixedWidth, p.y * (float)Screen.height, 0f));
             __result = new Vector3(result.x, result.y, 0f);
 
             return false; // skip the original (BAD IDEA)
