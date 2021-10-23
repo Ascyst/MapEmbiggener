@@ -19,7 +19,7 @@ using BepInEx.Configuration;
 namespace MapEmbiggener
 {
     [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin(ModId, ModName, "1.2.5")]
+    [BepInPlugin(ModId, ModName, "1.2.6")]
     [BepInProcess("Rounds.exe")]
     public class MapEmbiggener : BaseUnityPlugin
     {
@@ -29,6 +29,8 @@ namespace MapEmbiggener
         public static ConfigEntry<float> SizeConfig;
         public static ConfigEntry<bool> ChaosConfig;
         public static ConfigEntry<bool> SuddenDeathConfig;
+
+        internal static bool OOBEnabled = false;
 
         private struct NetworkEventType
         {
@@ -138,10 +140,19 @@ namespace MapEmbiggener
             GameModeManager.AddHook(GameModeHooks.HookRoundEnd, Interface.RoundEnd);
             GameModeManager.AddHook(GameModeHooks.HookBattleStart, Interface.BattleStart);
             GameModeManager.AddHook(GameModeHooks.HookPointStart, Interface.PointStart);
+
+            // hooks for OOB patch
+            GameModeManager.AddHook(GameModeHooks.HookPointStart, (gm) => SetOOBEnabled(true));
+            GameModeManager.AddHook(GameModeHooks.HookPointEnd, (gm) => SetOOBEnabled(false));
         }
         private IEnumerator ResetRotationDirection(IGameModeHandler gm)
         {
             MapEmbiggener.rotationDirection = 1f;
+            yield break;
+        }
+        private static IEnumerator SetOOBEnabled(bool enabled)
+        {
+            MapEmbiggener.OOBEnabled = enabled;
             yield break;
         }
         private void NewGUI(GameObject menu)
@@ -479,6 +490,7 @@ namespace MapEmbiggener
 
     [Serializable]
     [HarmonyPatch(typeof(OutOfBoundsHandler), "LateUpdate")]
+    [HarmonyBefore(new string[] { "io.olavim.rounds.rwf" })]
     class OutOfBoundsHandlerPatchLateUpdate
     {
         private static bool Prefix(OutOfBoundsHandler __instance, CharacterData ___data, float ___warningPercentage, ref float ___counter, ref bool ___almostOutOfBounds, ref bool ___outOfBounds, ref ChildRPC ___rpc)
@@ -492,7 +504,7 @@ namespace MapEmbiggener
             //{
                 //return false; // skip the original (BAD IDEA)
             //}
-            if (!GameManager.instance.battleOngoing)
+            if (!MapEmbiggener.OOBEnabled)
             {
                 return false;
             }
