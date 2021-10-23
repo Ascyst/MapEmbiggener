@@ -1,6 +1,11 @@
 # Map Embiggener
 -------------------
 
+### v1.2.5
+----------
+
+- Fixed players constantly taking damage outside the map during the pick phase
+
 ### v1.2.4
 ----------
 

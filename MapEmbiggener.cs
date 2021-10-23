@@ -19,7 +19,7 @@ using BepInEx.Configuration;
 namespace MapEmbiggener
 {
     [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin(ModId, ModName, "1.2.4")]
+    [BepInPlugin(ModId, ModName, "1.2.5")]
     [BepInProcess("Rounds.exe")]
     public class MapEmbiggener : BaseUnityPlugin
     {
@@ -113,7 +113,7 @@ namespace MapEmbiggener
 
             Unbound.RegisterCredits(ModName, new String[] {"Pykess (Code)", "Ascyst (Project creation)"}, new string[] { "github", "buy pykess a coffee", "buy ascyst a coffee" }, new string[] { "https://github.com/Ascyst/MapEmbiggener", "https://www.buymeacoffee.com/Pykess", "https://www.buymeacoffee.com/Ascyst" });
             Unbound.RegisterHandshake(ModId, OnHandShakeCompleted);
-            Unbound.RegisterMenu(ModName, () => { }, NewGUI, null, true);
+            Unbound.RegisterMenu(ModName, () => { }, NewGUI, null, false);
 
             // disable zooming during entire pick phase
             GameModeManager.AddHook(GameModeHooks.HookPickStart, (gm) => this.SetZoomModes(gm, false));
@@ -488,9 +488,13 @@ namespace MapEmbiggener
                 UnityEngine.GameObject.Destroy(__instance.gameObject);
                 return false; // skip the original (BAD IDEA)
             }
-            if (!(bool)Traverse.Create(___data.playerVel).Field("simulated").GetValue())
-            {
+            //if (!(bool)Traverse.Create(___data.playerVel).Field("simulated").GetValue())
+            //{
                 //return false; // skip the original (BAD IDEA)
+            //}
+            if (!GameManager.instance.battleOngoing)
+            {
+                return false;
             }
             if (!___data.isPlaying)
             {
