@@ -1,6 +1,11 @@
 # Map Embiggener
 -------------------
 
+### v1.2.7
+----------
+
+- Fixed OutOfBoundsHandler not working in Sandbox
+
 ### v1.2.5 / v1.2.6
 ----------
 

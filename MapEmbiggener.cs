@@ -19,7 +19,7 @@ using BepInEx.Configuration;
 namespace MapEmbiggener
 {
     [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin(ModId, ModName, "1.2.6")]
+    [BepInPlugin(ModId, ModName, "1.2.7")]
     [BepInProcess("Rounds.exe")]
     public class MapEmbiggener : BaseUnityPlugin
     {
@@ -30,8 +30,26 @@ namespace MapEmbiggener
         public static ConfigEntry<bool> ChaosConfig;
         public static ConfigEntry<bool> SuddenDeathConfig;
 
-        internal static bool OOBEnabled = false;
+        private static bool _OOBEnabled = false;
+        internal static bool OOBEnabled
+        {
+            get
+            {
+                if (GM_Test.instance != null && GM_Test.instance.gameObject != null)
+                {
+                    return (_OOBEnabled || GM_Test.instance.gameObject.activeInHierarchy);
+                }
+                else
+                {
+                    return _OOBEnabled;
+                }
 
+            }
+            set
+            {
+                _OOBEnabled = value;
+            }
+        }
         private struct NetworkEventType
         {
             public const string SyncModSettings = ModId + "_Sync";
