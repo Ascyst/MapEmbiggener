@@ -1,6 +1,11 @@
 # Map Embiggener
 -------------------
 
+### v1.2.8
+----------
+
+- Fixed issues for players with display resolutions that were very slightly different from 16:9
+
 ### v1.2.7
 ----------
 

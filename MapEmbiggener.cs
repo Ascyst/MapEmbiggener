@@ -19,7 +19,7 @@ using BepInEx.Configuration;
 namespace MapEmbiggener
 {
     [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin(ModId, ModName, "1.2.7")]
+    [BepInPlugin(ModId, ModName, "1.2.8")]
     [BepInProcess("Rounds.exe")]
     public class MapEmbiggener : BaseUnityPlugin
     {
@@ -486,7 +486,7 @@ namespace MapEmbiggener
     {
         internal static bool isUltraWide => ((float)Screen.width / (float)Screen.height - ratio >= eps);
         private const float ratio = 16f / 9f;
-        private const float eps = 1E-4f;
+        private const float eps = 1E-1f;
         internal static int fixedWidth
         {
             get
