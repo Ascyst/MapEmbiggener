@@ -329,6 +329,18 @@ namespace MapEmbiggener
             }
             return false;
         }
+        internal static bool IsMapsExtObject(this GameObject obj)
+        {
+            if (obj == null) { return false; }
+            foreach (Component comp in obj.GetComponents<Component>())
+            {
+                if (comp.ToString().Contains("MapsExt"))
+                {
+                    return true;
+                }
+            }    
+            return false;
+        }
     }
     // patch for special stickfightmaps objects
     [Serializable]
@@ -368,6 +380,16 @@ namespace MapEmbiggener
                 }
                 foreach (Rigidbody2D rig in __instance.allRigs)
                 {
+
+                    // if its a MapsExtended object, mess with the position only on the host's side
+                    if (rig.gameObject.IsMapsExtObject())
+                    {
+                        if (rig.gameObject.GetComponent<PhotonView>().IsMine)
+                        {
+                            rig.gameObject.transform.position = new Vector3(MapEmbiggener.setSize * rig.gameObject.transform.position.x, rig.gameObject.transform.position.y * MapEmbiggener.setSize, rig.gameObject.transform.position.z);
+                        }
+                    }
+
                     // rescale physics objects UNLESS they have a movesequence component
                     // also UNLESS they are a crate from stickfight (Boss Sloth's stickfight maps mod)
                     // if they have a movesequence component then scale the points in that component
@@ -395,9 +417,16 @@ namespace MapEmbiggener
                     }
 
                     if (rig.gameObject.GetComponentInChildren<MoveSequence>() == null)
-                    { 
-                        rig.transform.localScale *= MapEmbiggener.setSize;
+                    {
                         rig.mass *= MapEmbiggener.setSize;
+
+                        // if its a maps extended object, then only change its size on the host client
+                        if (rig.gameObject.IsMapsExtObject() && !rig.gameObject.GetComponent<PhotonView>().IsMine)
+                        {
+                            continue;
+                        }
+
+                        rig.transform.localScale *= MapEmbiggener.setSize;
                     }
                     else
                     {
@@ -432,19 +461,19 @@ namespace MapEmbiggener
             if (instance == null) { yield break; }
             timerStart = Time.time;
             rotTimerStart = Time.time;
-            while (instance.enabled)
+            while (instance != null && instance.enabled)
             {
-                if ((float)Traverse.Create(instance).Field("counter").GetValue() > 2f && instance.size > 1f && (MapEmbiggener.chaosMode || (MapEmbiggener.suddenDeathMode && CountPlayersAlive() <= 2)))
+                if (instance != null && (float)Traverse.Create(instance).Field("counter").GetValue() > 2f && instance.size > 1f && (MapEmbiggener.chaosMode || (MapEmbiggener.suddenDeathMode && CountPlayersAlive() <= 2)))
                 {
-                    if (Time.time > timerStart + MapEmbiggener.shrinkDelay)
+                    if (instance != null && Time.time > timerStart + MapEmbiggener.shrinkDelay)
                     {
                         timerStart = Time.time;
                         instance.size *= MapEmbiggener.shrinkRate;
                     }
                 }
-                if ((float)Traverse.Create(instance).Field("counter").GetValue() > 2f && instance.size > 1f && MapEmbiggener.chaosMode)
+                if (instance != null && (float)Traverse.Create(instance).Field("counter").GetValue() > 2f && instance.size > 1f && MapEmbiggener.chaosMode)
                 {
-                    if (Time.time > rotTimerStart + MapEmbiggener.rotationDelay)
+                    if (instance != null && Time.time > rotTimerStart + MapEmbiggener.rotationDelay)
                     {
                         rotTimerStart = Time.time;
                         Vector3 currentRot = Interface.GetCameraRot().eulerAngles;
