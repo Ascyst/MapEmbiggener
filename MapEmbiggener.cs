@@ -19,7 +19,7 @@ using BepInEx.Configuration;
 namespace MapEmbiggener
 {
     [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin(ModId, ModName, "1.2.8")]
+    [BepInPlugin(ModId, ModName, "1.2.9")]
     [BepInProcess("Rounds.exe")]
     public class MapEmbiggener : BaseUnityPlugin
     {

@@ -1,6 +1,12 @@
 # Map Embiggener
 -------------------
 
+### v1.2.9
+----------
+
+- Added compatibility with custom maps made with MapsExtended
+- Fixed errors that used to appear at the start of every round
+
 ### v1.2.8
 ----------
 
