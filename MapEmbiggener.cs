@@ -23,7 +23,7 @@ namespace MapEmbiggener
     [BepInProcess("Rounds.exe")]
     public class MapEmbiggener : BaseUnityPlugin
     {
-        internal static readonly string[] stickFightObjsToIgnore = new string[] { "Real", "Chain", "PLatform", "TreadMill", "Spike(Spike)"};
+        internal static readonly string[] stickFightObjsToIgnore = new string[] { "Real", "Chain", "Platform", "TreadMill", "Spike(Spike)", "SpikeBall"};
         internal static readonly string[] stickFightSpawnerObjs = new string[] {"(Pusher)(Clone)", "Box(Clone)(Clone)" };
 
         public static ConfigEntry<float> SizeConfig;
