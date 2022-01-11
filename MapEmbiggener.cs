@@ -486,7 +486,7 @@ namespace MapEmbiggener
         }
         private static int CountPlayersAlive()
         {
-            return PlayerManager.instance.players.Where(p => !p.data.dead).Count();
+            return PlayerManager.instance.players.Count(p => !p.data.dead);
         }
     }
 
@@ -559,18 +559,18 @@ namespace MapEmbiggener
             {
                 return false; // skip the original (BAD IDEA)
             }
-            /*
-            float x = Mathf.InverseLerp(-35.56f, 35.56f, data.transform.position.x);
-            float y = Mathf.InverseLerp(-20f, 20f, data.transform.position.y);
+            
+            float x = Mathf.InverseLerp(-35.56f*MapEmbiggener.setSize, 35.56f*MapEmbiggener.setSize, ___data.transform.position.x);
+            float y = Mathf.InverseLerp(-20f*MapEmbiggener.setSize, 20f*MapEmbiggener.setSize, ___data.transform.position.y);
             Vector3 vector = new Vector3(x, y, 0f);
             vector = new Vector3(Mathf.Clamp(vector.x, 0f, 1f), Mathf.Clamp(vector.y, 0f, 1f), vector.z);
-            */
-            Vector3 vector = MainCam.instance.transform.GetComponent<Camera>().FixedWorldToScreenPoint(new Vector3(___data.transform.position.x, ___data.transform.position.y, 0f));
 
-            vector.x /= (float)FixedScreen.fixedWidth;
-            vector.y /= (float)Screen.height;
-
-            vector = new Vector3(Mathf.Clamp01(vector.x), Mathf.Clamp01(vector.y), 0f);
+            // Vector3 vector = MainCam.instance.transform.GetComponent<Camera>().FixedWorldToScreenPoint(new Vector3(___data.transform.position.x, ___data.transform.position.y, 0f));
+            //
+            // vector.x /= (float)FixedScreen.fixedWidth;
+            // vector.y /= (float)Screen.height;
+            //
+            // vector = new Vector3(Mathf.Clamp01(vector.x), Mathf.Clamp01(vector.y), 0f);
 
             ___almostOutOfBounds = false;
             ___outOfBounds = false;
@@ -601,9 +601,7 @@ namespace MapEmbiggener
             ___counter = ___counter + TimeHandler.deltaTime;
             if (___almostOutOfBounds && !___data.dead)
             {
-                __instance.transform.position = (Vector3)typeof(OutOfBoundsHandler).InvokeMember("GetPoint",
-                                                    BindingFlags.Instance | BindingFlags.InvokeMethod |
-                                                    BindingFlags.NonPublic, null, __instance, new object[] { vector });
+                __instance.transform.position = (Vector3)__instance.InvokeMethod("GetPoint", vector);
                 __instance.transform.rotation = Quaternion.LookRotation(Vector3.forward, -(___data.transform.position - __instance.transform.position));
                 if (___counter > 0.1f)
                 {
@@ -614,9 +612,7 @@ namespace MapEmbiggener
             if (___outOfBounds && !___data.dead)
             {
                 ___data.sinceGrounded = 0f;
-                __instance.transform.position = (Vector3)typeof(OutOfBoundsHandler).InvokeMember("GetPoint",
-                                                    BindingFlags.Instance | BindingFlags.InvokeMethod |
-                                                    BindingFlags.NonPublic, null, __instance, new object[] { vector });
+                __instance.transform.position = (Vector3)__instance.InvokeMethod("GetPoint", vector);
                 __instance.transform.rotation = Quaternion.LookRotation(Vector3.forward, -(___data.transform.position - __instance.transform.position));
                 if (___counter > 0.1f && ___data.view.IsMine)
                 {
@@ -645,8 +641,9 @@ namespace MapEmbiggener
     {
         private static bool Prefix(ref Vector3 __result, OutOfBoundsHandler __instance, Vector3 p)
         {
-            Vector3 result = MainCam.instance.transform.GetComponent<Camera>().FixedScreenToWorldPoint(new Vector3(p.x * (float)FixedScreen.fixedWidth, p.y * (float)Screen.height, 0f));
-            __result = new Vector3(result.x, result.y, 0f);
+            float x = Mathf.Lerp(-35.56f*MapEmbiggener.setSize, 35.56f*MapEmbiggener.setSize, p.x);
+            float y = Mathf.Lerp(-20f*MapEmbiggener.setSize, 20f*MapEmbiggener.setSize, p.y);
+            __result = new Vector3(x, y, 0f);
 
             return false; // skip the original (BAD IDEA)
         }
