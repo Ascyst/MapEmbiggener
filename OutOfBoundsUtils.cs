@@ -59,8 +59,6 @@ namespace MapEmbiggener
 
         internal static void CreateBorder()
         {
-            UnityEngine.Debug.Log("Creating border");
-            
             // Reset OOB
             SetOOB(defaultX, defaultY);
             
