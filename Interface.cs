@@ -1,19 +1,11 @@
-﻿using System;
-using BepInEx;
-using HarmonyLib;
+﻿using HarmonyLib;
 using Photon.Pun;
 using UnboundLib;
 using UnboundLib.GameModes;
 using UnityEngine;
 using System.Collections;
 using UnboundLib.Networking;
-using System.Reflection;
-using System.Linq;
 using System.Collections.Generic;
-using UnboundLib.Utils.UI;
-using TMPro;
-using UnityEngine.Events;
-using UnityEngine.UI;
 
 namespace MapEmbiggener
 {
@@ -123,14 +115,15 @@ namespace MapEmbiggener
                 }
             });
         }
+
+        #region BattleRestoreEvents
+
         internal static IEnumerator BattleStart(IGameModeHandler gm)
         {
             if (MapEmbiggener.restoreSettingsOn == ChangeUntil.BattleStart)
             {
                 yield return RestoreDefaults();
             }
-
-            yield break;
         }
         internal static IEnumerator PointStart(IGameModeHandler gm)
         {
@@ -138,8 +131,6 @@ namespace MapEmbiggener
             {
                 yield return RestoreDefaults();
             }
-
-            yield break;
         }
         internal static IEnumerator PointEnd(IGameModeHandler gm)
         {
@@ -147,8 +138,6 @@ namespace MapEmbiggener
             {
                 yield return RestoreDefaults();
             }
-
-            yield break;
         }
         internal static IEnumerator RoundEnd(IGameModeHandler gm)
         {
@@ -156,8 +145,6 @@ namespace MapEmbiggener
             {
                 yield return RestoreDefaults();
             }
-
-            yield break;
         }
         internal static IEnumerator PickEnd(IGameModeHandler gm)
         {
@@ -165,8 +152,6 @@ namespace MapEmbiggener
             {
                 yield return RestoreDefaults();
             }
-
-            yield break;
         }
         internal static IEnumerator GameEnd(IGameModeHandler gm)
         {
@@ -174,42 +159,59 @@ namespace MapEmbiggener
             {
                 yield return RestoreDefaults();
             }
-
-            yield break;
         }
+        
+        #endregion
+        
         public static Vector2 GetCameraPos()
         {
-            GameObject MainCam = UnityEngine.GameObject.Find("/Game/Visual/Rendering /Shake/MainCamera");
+            var mainCam = MainCam.instance;
 
-            return MainCam.transform.position;
+            return mainCam.transform.position;
         }
         public static Quaternion GetCameraRot()
         {
-            GameObject MainCam = UnityEngine.GameObject.Find("/Game/Visual/Rendering /Shake/MainCamera");
+            var mainCam = MainCam.instance;
 
-            return MainCam.transform.rotation;
+            return mainCam.transform.rotation;
         }
-        internal static void MoveCamera(Vector3? pos = null, float? angle = null)
+        public static void MoveCamera(Vector3? pos = null, float? angle = null)
         {
-            GameObject MainCam = UnityEngine.GameObject.Find("/Game/Visual/Rendering /Shake/MainCamera");
-            GameObject LightingCam = UnityEngine.GameObject.Find("/Game/Visual/Rendering /Shake/Lighting/LightCamera");
+            var mainCam = MainCam.instance.transform;
+            var LightingCam = mainCam.parent.GetChild(1).GetChild(0);
 
-            Vector3 Pos = pos ?? MainCam.transform.position;
+            Vector3 Pos = pos ?? mainCam.position;
             Quaternion rot;
             if (angle == null)
             {
-                rot = MainCam.transform.rotation;
+                rot = mainCam.rotation;
             }
             else
             {
                 rot = Quaternion.Euler((new Vector3(0f, 0f, (float)angle)));
             }
 
-            MainCam.transform.position = Pos;
-            LightingCam.transform.position = Pos;
-            MainCam.transform.rotation = rot;
-            LightingCam.transform.rotation = rot;
+            mainCam.position = Pos;
+            LightingCam.position = Pos;
+            mainCam.rotation = rot;
+            LightingCam.rotation = rot;
         }
+
+        #region OutOfBounds
+
+        public static void SetOOB(float x, float y)
+        {
+            OutOfBoundsUtils.SetOOB(x,y);
+        }
+
+        public static void SetOOB(float minX, float maxX, float minY, float maxY)
+        {
+            OutOfBoundsUtils.SetOOB(minX, maxX, minY, maxY);
+        }
+
+        #endregion
+        
+        
 
         public enum ChangeUntil
         {
