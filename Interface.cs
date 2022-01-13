@@ -208,6 +208,11 @@ namespace MapEmbiggener
         {
             OutOfBoundsUtils.SetOOB(minX, maxX, minY, maxY);
         }
+        
+        public static float minX => OutOfBoundsUtils.minX;
+        public static float maxX => OutOfBoundsUtils.maxX;
+        public static float minY => OutOfBoundsUtils.minY;
+        public static float maxY => OutOfBoundsUtils.maxY;
 
         #endregion
         
