@@ -17,7 +17,7 @@ using BepInEx.Configuration;
 namespace MapEmbiggener
 {
     [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin(ModId, ModName, "1.2.9")]
+    [BepInPlugin(MapEmbiggener.ModId, MapEmbiggener.ModName, "1.2.9")]
     [BepInProcess("Rounds.exe")]
     public class MapEmbiggener : BaseUnityPlugin
     {
@@ -30,7 +30,7 @@ namespace MapEmbiggener
         
         private struct NetworkEventType
         {
-            public const string SyncModSettings = ModId + "_Sync";
+            public const string SyncModSettings = MapEmbiggener.ModId + "_Sync";
         }
         private const string ModId = "pykess.rounds.plugins.mapembiggener";
 
@@ -66,11 +66,11 @@ namespace MapEmbiggener
             MapEmbiggener.restoreSettingsOn = Interface.ChangeUntil.Forever;
 
             // bind configs with BepInEx
-            SizeConfig = Config.Bind("MapEmbiggener", "Size", 1f, "Size to scale maps to");
-            SuddenDeathConfig = Config.Bind("MapEmbiggener", "SuddenDeathMode", false, "Enable Sudden Death mode");
-            ChaosConfig = Config.Bind("MapEmbiggener", "ChaosMode", false, "Enable Chaos mode");
+            MapEmbiggener.SizeConfig = this.Config.Bind("MapEmbiggener", "Size", 1f, "Size to scale maps to");
+            MapEmbiggener.SuddenDeathConfig = this.Config.Bind("MapEmbiggener", "SuddenDeathMode", false, "Enable Sudden Death mode");
+            MapEmbiggener.ChaosConfig = this.Config.Bind("MapEmbiggener", "ChaosMode", false, "Enable Chaos mode");
 
-            new Harmony(ModId).PatchAll();
+            new Harmony(MapEmbiggener.ModId).PatchAll();
             Unbound.RegisterHandshake(NetworkEventType.SyncModSettings, OnHandShakeCompleted);
             
             On.MainMenuHandler.Awake += (orig, self) =>
@@ -132,9 +132,9 @@ namespace MapEmbiggener
             MapEmbiggener.suddenDeathMode = MapEmbiggener.SuddenDeathConfig.Value;
             MapEmbiggener.chaosMode = MapEmbiggener.ChaosConfig.Value;
 
-            Unbound.RegisterCredits(ModName, new String[] {"Pykess (Code)", "Ascyst (Project creation)"}, new string[] { "github", "buy pykess a coffee", "buy ascyst a coffee" }, new string[] { "https://github.com/Ascyst/MapEmbiggener", "https://www.buymeacoffee.com/Pykess", "https://www.buymeacoffee.com/Ascyst" });
-            Unbound.RegisterHandshake(ModId, OnHandShakeCompleted);
-            Unbound.RegisterMenu(ModName, () => { }, NewGUI, null, false);
+            Unbound.RegisterCredits(MapEmbiggener.ModName, new String[] {"Pykess (Code)", "Ascyst (Project creation)"}, new string[] { "github", "buy pykess a coffee", "buy ascyst a coffee" }, new string[] { "https://github.com/Ascyst/MapEmbiggener", "https://www.buymeacoffee.com/Pykess", "https://www.buymeacoffee.com/Ascyst" });
+            Unbound.RegisterHandshake(MapEmbiggener.ModId, OnHandShakeCompleted);
+            Unbound.RegisterMenu(MapEmbiggener.ModName, () => { }, this.NewGUI, null, false);
 
             // disable zooming during entire pick phase
             GameModeManager.AddHook(GameModeHooks.HookPickStart, (gm) => this.SetZoomModes(gm, false));
@@ -155,7 +155,7 @@ namespace MapEmbiggener
             GameModeManager.AddHook(GameModeHooks.HookPickEnd, Interface.PickEnd);
             GameModeManager.AddHook(GameModeHooks.HookPointEnd, Interface.PointEnd);
             GameModeManager.AddHook(GameModeHooks.HookGameEnd, Interface.GameEnd);
-            GameModeManager.AddHook(GameModeHooks.HookGameStart, ResetRotationDirection);
+            GameModeManager.AddHook(GameModeHooks.HookGameStart, this.ResetRotationDirection);
             GameModeManager.AddHook(GameModeHooks.HookRoundEnd, Interface.RoundEnd);
             GameModeManager.AddHook(GameModeHooks.HookBattleStart, Interface.BattleStart);
             GameModeManager.AddHook(GameModeHooks.HookPointStart, Interface.PointStart);
@@ -194,7 +194,7 @@ namespace MapEmbiggener
                 }
                 OnHandShakeCompleted();
             }
-            MenuHandler.CreateSlider("Map Size Multiplier", menu, 60, 0.5f, 3f, SizeConfig.Value, SliderChangedAction, out UnityEngine.UI.Slider slider);
+            MenuHandler.CreateSlider("Map Size Multiplier", menu, 60, 0.5f, 3f, MapEmbiggener.SizeConfig.Value, SliderChangedAction, out Slider slider);
             void ResetButton()
             {
                 slider.value = 1f;
@@ -216,8 +216,9 @@ namespace MapEmbiggener
                 MapEmbiggener.settingsChaosMode = MapEmbiggener.ChaosConfig.Value;
                 OnHandShakeCompleted();
             }
-            suddenDeathModeToggle = MenuHandler.CreateToggle(MapEmbiggener.SuddenDeathConfig.Value, "Sudden Death Mode", menu, suddenDeathModeToggleAction, 60).GetComponent<Toggle>();
-            chaosModeToggle = MenuHandler.CreateToggle(MapEmbiggener.ChaosConfig.Value, "Chaos Mode", menu, chaosModeToggleAction, 60).GetComponent<Toggle>();
+
+            this.suddenDeathModeToggle = MenuHandler.CreateToggle(MapEmbiggener.SuddenDeathConfig.Value, "Sudden Death Mode", menu, suddenDeathModeToggleAction, 60).GetComponent<Toggle>();
+            this.chaosModeToggle = MenuHandler.CreateToggle(MapEmbiggener.ChaosConfig.Value, "Chaos Mode", menu, chaosModeToggleAction, 60).GetComponent<Toggle>();
 
         }
         private IEnumerator SetZoomModes(IGameModeHandler gm, bool enable)
@@ -227,7 +228,7 @@ namespace MapEmbiggener
             {
                 MapEmbiggener.chaosMode = false;
                 MapEmbiggener.suddenDeathMode = false;
-                yield return ResetCamera(gm);
+                yield return this.ResetCamera(gm);
             }
             // restore settings
             else
@@ -272,7 +273,7 @@ namespace MapEmbiggener
         private IEnumerator ResetCameraAfter(IGameModeHandler gm, float delay)
         {
             yield return new WaitForSecondsRealtime(0.5f);
-            yield return ResetCamera(gm);
+            yield return this.ResetCamera(gm);
             yield break;
         }
 
@@ -441,13 +442,13 @@ namespace MapEmbiggener
                     }
                 }
 
-                GameObject Rendering = UnityEngine.GameObject.Find("/Game/Visual/Rendering ");
+                GameObject Rendering = GameObject.Find("/Game/Visual/Rendering ");
 
                 if (Rendering != null)
                 {
                     foreach (Transform transform in Rendering.GetComponentsInChildren<Transform>(true))
                     {
-                        transform.localScale = Vector3.one * UnityEngine.Mathf.Clamp(MapEmbiggener.setSize, 0.1f, 2f);
+                        transform.localScale = Vector3.one * Mathf.Clamp(MapEmbiggener.setSize, 0.1f, 2f);
                     }
                 }
 
@@ -456,18 +457,18 @@ namespace MapEmbiggener
         }
         private static float timerStart;
         private static float rotTimerStart;
-        private static System.Collections.IEnumerator GameModes(Map instance)
+        private static IEnumerator GameModes(Map instance)
         {
             if (instance == null) { yield break; }
-            timerStart = Time.time;
-            rotTimerStart = Time.time;
+            MapPatchStartMatch.timerStart = Time.time;
+            MapPatchStartMatch.rotTimerStart = Time.time;
             while (instance != null && instance.enabled)
             {
                 if (instance != null && (float)instance.GetFieldValue("counter") > 2f && MapEmbiggener.zoomShrink > 0.3f && (MapEmbiggener.chaosMode || (MapEmbiggener.suddenDeathMode && CountPlayersAlive() <= 2)))
                 {
-                    if (instance != null && Time.time > timerStart + MapEmbiggener.shrinkDelay)
+                    if (instance != null && Time.time > MapPatchStartMatch.timerStart + MapEmbiggener.shrinkDelay)
                     {
-                        timerStart = Time.time;
+                        MapPatchStartMatch.timerStart = Time.time;
                         MapEmbiggener.zoomShrink *= MapEmbiggener.shrinkRate;
                         instance.size = MapEmbiggener.defaultMapSize * MapEmbiggener.settingsSetSize *
                                          MapEmbiggener.zoomShrink;
@@ -479,9 +480,9 @@ namespace MapEmbiggener
                 }
                 if (instance != null && (float)instance.GetFieldValue("counter") > 2f && MapEmbiggener.zoomShrink > 0.3f && MapEmbiggener.chaosMode)
                 {
-                    if (instance != null && Time.time > rotTimerStart + MapEmbiggener.rotationDelay)
+                    if (instance != null && Time.time > MapPatchStartMatch.rotTimerStart + MapEmbiggener.rotationDelay)
                     {
-                        rotTimerStart = Time.time;
+                        MapPatchStartMatch.rotTimerStart = Time.time;
                         Vector3 currentRot = Interface.GetCameraRot().eulerAngles;
                         Interface.MoveCamera(angle: currentRot.z + MapEmbiggener.rotationDirection * MapEmbiggener.rotationRate);
                     }

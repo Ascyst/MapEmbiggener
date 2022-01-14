@@ -22,20 +22,20 @@ namespace MapEmbiggener
             {
                 if (GM_Test.instance != null && GM_Test.instance.gameObject != null)
                 {
-                    return (_OOBEnabled || GM_Test.instance.gameObject.activeInHierarchy);
+                    return (OutOfBoundsUtils._OOBEnabled || GM_Test.instance.gameObject.activeInHierarchy);
                 }
                 else
                 {
-                    return _OOBEnabled;
+                    return OutOfBoundsUtils._OOBEnabled;
                 }
 
             }
-            set => _OOBEnabled = value;
+            set => OutOfBoundsUtils._OOBEnabled = value;
         }
         
         internal static IEnumerator SetOOBEnabled(bool enabled)
         {
-            OOBEnabled = enabled;
+            OutOfBoundsUtils.OOBEnabled = enabled;
             yield break;
         }
 
@@ -51,23 +51,23 @@ namespace MapEmbiggener
             OutOfBoundsUtils.minY = minY;
             OutOfBoundsUtils.maxY = maxY;
 
-            if (border == null) return;
-            var renderer = border.GetComponent<RectTransform>();
-            renderer.sizeDelta = new Vector2((maxX - minX)*(1930/defaultX/2), (maxY - minY)*(1090/defaultY/2));
-            border.transform.position = new Vector3(minX + (maxX - minX) / 2, minY + (maxY - minY) / 2, 0);
+            if (OutOfBoundsUtils.border == null) return;
+            var renderer = OutOfBoundsUtils.border.GetComponent<RectTransform>();
+            renderer.sizeDelta = new Vector2((maxX - minX)*(1930/OutOfBoundsUtils.defaultX/2), (maxY - minY)*(1090/OutOfBoundsUtils.defaultY/2));
+            OutOfBoundsUtils.border.transform.position = new Vector3(minX + (maxX - minX) / 2, minY + (maxY - minY) / 2, 0);
         }
 
         internal static void CreateBorder()
         {
             // Reset OOB
-            SetOOB(defaultX, defaultY);
+            SetOOB(OutOfBoundsUtils.defaultX, OutOfBoundsUtils.defaultY);
             
             // Move border to a worldSpace canvas
-            border = UIHandler.instance.transform.Find("Canvas/Border").gameObject;
+            OutOfBoundsUtils.border = UIHandler.instance.transform.Find("Canvas/Border").gameObject;
             var canvas = new GameObject("BorderCanvas").AddComponent<Canvas>();
-            border.transform.SetParent(canvas.transform);
-            border.transform.position = Vector3.zero;
-            border.transform.localScale = new Vector3(0.037f, 0.037f, 0.037f);
+            OutOfBoundsUtils.border.transform.SetParent(canvas.transform);
+            OutOfBoundsUtils.border.transform.position = Vector3.zero;
+            OutOfBoundsUtils.border.transform.localScale = new Vector3(0.037f, 0.037f, 0.037f);
             canvas.renderMode = RenderMode.WorldSpace;
         }
     }

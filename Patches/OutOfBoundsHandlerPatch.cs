@@ -14,7 +14,7 @@ namespace MapEmbiggener.Patches
         {
             if (!___data)
             {
-                UnityEngine.GameObject.Destroy(__instance.gameObject);
+                GameObject.Destroy(__instance.gameObject);
                 return false; // skip the original (BAD IDEA)
             }
             //if (!(bool)Traverse.Create(___data.playerVel).Field("simulated").GetValue())

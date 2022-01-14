@@ -33,7 +33,7 @@ namespace MapEmbiggener
 
             if (changeUntil == ChangeUntil.Custom && duration > 0f)
             {
-                Unbound.Instance.StartCoroutine(Interface.WaitToRestore(duration));
+                Unbound.Instance.StartCoroutine(WaitToRestore(duration));
             }
 
         }
@@ -104,13 +104,13 @@ namespace MapEmbiggener
                         Traverse.Create(rig.gameObject.GetComponentInChildren<MoveSequence>()).Field("startPos").SetValue((Vector2)Traverse.Create(rig.gameObject.GetComponentInChildren<MoveSequence>()).Field("startPos").GetValue() * size/MapEmbiggener.setSize);
                     }
                 }
-                GameObject Rendering = UnityEngine.GameObject.Find("/Game/Visual/Rendering ");
+                GameObject Rendering = GameObject.Find("/Game/Visual/Rendering ");
 
                 if (Rendering != null)
                 {
                     foreach (Transform transform in Rendering.GetComponentsInChildren<Transform>(true))
                     {
-                        transform.localScale = Vector3.one * UnityEngine.Mathf.Clamp(size/MapEmbiggener.setSize, 0.1f, 2f);
+                        transform.localScale = Vector3.one * Mathf.Clamp(size/MapEmbiggener.setSize, 0.1f, 2f);
                     }
                 }
             });
