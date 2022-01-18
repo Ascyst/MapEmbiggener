@@ -33,6 +33,9 @@
   <ItemGroup>
     <Compile Include="Interface.cs" />
     <Compile Include="MapEmbiggener.cs" />
+    <Compile Include="OutOfBoundsUtils.cs" />
+    <Compile Include="Patches\OutOfBoundsHandlerPatch.cs" />
+    <Compile Include="Patches\ScreenEdgeBounce.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -464,7 +464,7 @@ namespace MapEmbiggener
             MapPatchStartMatch.rotTimerStart = Time.time;
             while (instance != null && instance.enabled)
             {
-                if (instance != null && (float)instance.GetFieldValue("counter") > 2f && MapEmbiggener.zoomShrink > 0.3f && (MapEmbiggener.chaosMode || (MapEmbiggener.suddenDeathMode && CountPlayersAlive() <= 2)))
+                if (instance != null && (float)instance.GetFieldValue("counter") > 2f && (MapEmbiggener.chaosMode || (MapEmbiggener.suddenDeathMode && CountPlayersAlive() <= 2)))
                 {
                     if (instance != null && Time.time > MapPatchStartMatch.timerStart + MapEmbiggener.shrinkDelay)
                     {
@@ -478,7 +478,7 @@ namespace MapEmbiggener
                         
                     }
                 }
-                if (instance != null && (float)instance.GetFieldValue("counter") > 2f && MapEmbiggener.zoomShrink > 0.3f && MapEmbiggener.chaosMode)
+                if (instance != null && (float)instance.GetFieldValue("counter") > 2f && MapEmbiggener.chaosMode)
                 {
                     if (instance != null && Time.time > MapPatchStartMatch.rotTimerStart + MapEmbiggener.rotationDelay)
                     {
