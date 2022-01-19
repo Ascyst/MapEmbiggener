@@ -73,6 +73,8 @@ namespace MapEmbiggener
             new Harmony(MapEmbiggener.ModId).PatchAll();
             Unbound.RegisterHandshake(NetworkEventType.SyncModSettings, OnHandShakeCompleted);
             
+            this.gameObject.AddComponent<OutOfBoundsUtils>();
+            
             On.MainMenuHandler.Awake += (orig, self) =>
             {
                 orig(self);
@@ -92,7 +94,9 @@ namespace MapEmbiggener
         //     var maxX = GUILayout.HorizontalSlider(OutOfBoundsUtils.maxX, -50, 50, GUILayout.Width(300f));
         //     var minY = GUILayout.HorizontalSlider(OutOfBoundsUtils.minY, -40, 40, GUILayout.Width(300f));
         //     var maxY = GUILayout.HorizontalSlider(OutOfBoundsUtils.maxY, -40, 40, GUILayout.Width(300f));
-        //     OutOfBoundsUtils.SetOOB(minX, maxX, minY, maxY);
+        //     GUILayout.Space(10f);
+        //     var angle = GUILayout.HorizontalSlider(OutOfBoundsUtils.angle, 0, 360, GUILayout.Width(300f));
+        //     OutOfBoundsUtils.SetOOB(minX, maxX, minY, maxY, angle);
         // }
 
         internal static void OnHandShakeCompleted()
@@ -484,7 +488,9 @@ namespace MapEmbiggener
                     {
                         MapPatchStartMatch.rotTimerStart = Time.time;
                         Vector3 currentRot = Interface.GetCameraRot().eulerAngles;
-                        Interface.MoveCamera(angle: currentRot.z + MapEmbiggener.rotationDirection * MapEmbiggener.rotationRate);
+                        var angle = currentRot.z + MapEmbiggener.rotationDirection * MapEmbiggener.rotationRate;
+                        Interface.MoveCamera(angle: angle);
+                        OutOfBoundsUtils.SetAngle(angle);
                     }
                 }
                 yield return null;

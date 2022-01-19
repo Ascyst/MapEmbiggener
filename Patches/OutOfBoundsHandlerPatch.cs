@@ -30,10 +30,8 @@ namespace MapEmbiggener.Patches
                 return false; // skip the original (BAD IDEA)
             }
             
-            float x = Mathf.InverseLerp(OutOfBoundsUtils.minX, OutOfBoundsUtils.maxX, ___data.transform.position.x);
-            float y = Mathf.InverseLerp(OutOfBoundsUtils.minY, OutOfBoundsUtils.maxY, ___data.transform.position.y);
-            Vector3 vector = new Vector3(x, y, 0f);
-            vector = new Vector3(Mathf.Clamp(vector.x, 0f, 1f), Mathf.Clamp(vector.y, 0f, 1f), vector.z);
+            Vector3 vector;
+            // vector = new Vector3(Mathf.Clamp(vector.x, 0f, 1f), Mathf.Clamp(vector.y, 0f, 1f), vector.z);
 
             // Vector3 vector = MainCam.instance.transform.GetComponent<Camera>().FixedWorldToScreenPoint(new Vector3(___data.transform.position.x, ___data.transform.position.y, 0f));
             //
@@ -44,11 +42,11 @@ namespace MapEmbiggener.Patches
 
             ___almostOutOfBounds = false;
             ___outOfBounds = false;
-            if (vector.x <= 0f || vector.x >= 1f || vector.y >= 1f || vector.y <= 0f)
+            if (!OutOfBoundsUtils.IsInsideBounds(___data.transform.position, out vector))
             {
                 ___outOfBounds = true;
             }
-            else if (vector.x < ___warningPercentage || vector.x > 1f - ___warningPercentage || vector.y > 1f - ___warningPercentage || vector.y < ___warningPercentage)
+            else if (OutOfBoundsUtils.IsAlmostOutsideRect(___data.transform.position, ___warningPercentage, out vector))
             {
                 ___almostOutOfBounds = true;
                 if (vector.x < ___warningPercentage)
@@ -116,9 +114,10 @@ namespace MapEmbiggener.Patches
     {
         private static bool Prefix(ref Vector3 __result, OutOfBoundsHandler __instance, Vector3 p)
         {
-            float x = Mathf.Lerp(OutOfBoundsUtils.minX, OutOfBoundsUtils.maxX, p.x);
-            float y = Mathf.Lerp(OutOfBoundsUtils.minY, OutOfBoundsUtils.maxY, p.y);
-            __result = new Vector3(x, y, 0f);
+            __result = OutOfBoundsUtils.GetPoint(p);
+            // float x = Mathf.Lerp(OutOfBoundsUtils.minX, OutOfBoundsUtils.maxX, p.x);
+            // float y = Mathf.Lerp(OutOfBoundsUtils.minY, OutOfBoundsUtils.maxY, p.y);
+            // __result = new Vector3(x, y, 0f);
 
             return false; // skip the original (BAD IDEA)
         }

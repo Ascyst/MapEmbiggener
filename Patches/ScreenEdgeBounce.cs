@@ -17,28 +17,32 @@ namespace MapEmbiggener.Patches
             {
                 return false;
             }
-            float x = Mathf.InverseLerp(OutOfBoundsUtils.minX, OutOfBoundsUtils.maxX, __instance.transform.position.x);
-            float y = Mathf.InverseLerp(OutOfBoundsUtils.minY, OutOfBoundsUtils.maxY, __instance.transform.position.y);
-            Vector3 vector = new Vector3(x, y, 0f);
-            vector = new Vector3(Mathf.Clamp(vector.x, 0f, 1f), Mathf.Clamp(vector.y, 0f, 1f), vector.z);
-            if (vector.x <= 0f || vector.x >= 1f || vector.y >= 1f || vector.y <= 0f)
+            // float x = Mathf.InverseLerp(OutOfBoundsUtils.minX, OutOfBoundsUtils.maxX, __instance.transform.position.x);
+            // float y = Mathf.InverseLerp(OutOfBoundsUtils.minY, OutOfBoundsUtils.maxY, __instance.transform.position.y);
+            // Vector3 vector = new Vector3(x, y, 0f);
+            // vector = new Vector3(Mathf.Clamp(vector.x, 0f, 1f), Mathf.Clamp(vector.y, 0f, 1f), vector.z);
+            
+            
+            if (!OutOfBoundsUtils.IsInsideBounds(__instance.transform.position, out var vector))
             {
                 Vector2 vector2 = Vector2.zero;
+                
+                // Here we rotate the direction vector by the border angle
                 if (vector.x == 0f)
                 {
-                    vector2 = Vector2.right;
+                    vector2 = Quaternion.Euler(0,0,OutOfBoundsUtils.angle)*Vector2.right;
                 }
                 else if (vector.x == 1f)
                 {
-                    vector2 = -Vector2.right;
+                    vector2 = Quaternion.Euler(0,0,OutOfBoundsUtils.angle)*-Vector2.right;
                 }
                 if (vector.y == 0f)
                 {
-                    vector2 = Vector2.up;
+                    vector2 = Quaternion.Euler(0,0,OutOfBoundsUtils.angle)*Vector2.up;
                 }
                 else if (vector.y == 1f)
                 {
-                    vector2 = -Vector2.up;
+                    vector2 = Quaternion.Euler(0,0,OutOfBoundsUtils.angle)*-Vector2.up;
                 }
                 if (___lastNormal == vector2 && Vector2.Angle(vector2, __instance.transform.forward) < 90f)
                 {
