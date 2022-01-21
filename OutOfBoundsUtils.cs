@@ -134,7 +134,7 @@ namespace MapEmbiggener
         internal static void CreateBorder()
         {
             // Reset OOB
-            SetOOB(OutOfBoundsUtils.defaultX, OutOfBoundsUtils.defaultY);
+            SetOOB(OutOfBoundsUtils.defaultX, OutOfBoundsUtils.defaultY, 0);
             
             // Move border to a worldSpace canvas
             OutOfBoundsUtils.border = UIHandler.instance.transform.Find("Canvas/Border").gameObject;
