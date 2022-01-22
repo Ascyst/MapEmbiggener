@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace MapEmbiggener
 {
-    internal class OutOfBoundsUtils : MonoBehaviour
+    public class OutOfBoundsUtils : MonoBehaviour
     {
         public static readonly float defaultX = 35.56f;
         public static readonly float defaultY = 20f;
