@@ -7,52 +7,30 @@ using UnboundLib.GameModes;
 using UnityEngine;
 using System.Collections;
 using UnboundLib.Networking;
-using System.Reflection;
 using System.Linq;
 using System.Collections.Generic;
 using UnboundLib.Utils.UI;
 using TMPro;
-using UnityEngine.Events;
 using UnityEngine.UI;
 using BepInEx.Configuration;
 
 namespace MapEmbiggener
 {
     [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin(ModId, ModName, "1.2.9")]
+    [BepInPlugin(MapEmbiggener.ModId, MapEmbiggener.ModName, "1.2.9")]
     [BepInProcess("Rounds.exe")]
     public class MapEmbiggener : BaseUnityPlugin
     {
-        internal static readonly string[] stickFightObjsToIgnore = new string[] { "Real", "Chain", "PLatform", "TreadMill", "Spike(Spike)"};
+        internal static readonly string[] stickFightObjsToIgnore = new string[] { "Real", "Chain", "Platform", "TreadMill", "Spike(Spike)", "SpikeBall"};
         internal static readonly string[] stickFightSpawnerObjs = new string[] {"(Pusher)(Clone)", "Box(Clone)(Clone)" };
 
         public static ConfigEntry<float> SizeConfig;
         public static ConfigEntry<bool> ChaosConfig;
         public static ConfigEntry<bool> SuddenDeathConfig;
-
-        private static bool _OOBEnabled = false;
-        internal static bool OOBEnabled
-        {
-            get
-            {
-                if (GM_Test.instance != null && GM_Test.instance.gameObject != null)
-                {
-                    return (_OOBEnabled || GM_Test.instance.gameObject.activeInHierarchy);
-                }
-                else
-                {
-                    return _OOBEnabled;
-                }
-
-            }
-            set
-            {
-                _OOBEnabled = value;
-            }
-        }
+        
         private struct NetworkEventType
         {
-            public const string SyncModSettings = ModId + "_Sync";
+            public const string SyncModSettings = MapEmbiggener.ModId + "_Sync";
         }
         private const string ModId = "pykess.rounds.plugins.mapembiggener";
 
@@ -67,6 +45,7 @@ namespace MapEmbiggener
         internal static bool settingsChaosMode = false;
 
         internal static float shrinkRate;
+        internal static float zoomShrink = 1;
 
         internal static readonly float rotationRate = 0.1f;
         internal static float rotationDirection = 1f;
@@ -87,13 +66,39 @@ namespace MapEmbiggener
             MapEmbiggener.restoreSettingsOn = Interface.ChangeUntil.Forever;
 
             // bind configs with BepInEx
-            SizeConfig = Config.Bind("MapEmbiggener", "Size", 1f, "Size to scale maps to");
-            SuddenDeathConfig = Config.Bind("MapEmbiggener", "SuddenDeathMode", false, "Enable Sudden Death mode");
-            ChaosConfig = Config.Bind("MapEmbiggener", "ChaosMode", false, "Enable Chaos mode");
+            MapEmbiggener.SizeConfig = this.Config.Bind("MapEmbiggener", "Size", 1f, "Size to scale maps to");
+            MapEmbiggener.SuddenDeathConfig = this.Config.Bind("MapEmbiggener", "SuddenDeathMode", false, "Enable Sudden Death mode");
+            MapEmbiggener.ChaosConfig = this.Config.Bind("MapEmbiggener", "ChaosMode", false, "Enable Chaos mode");
 
-            new Harmony(ModId).PatchAll();
+            new Harmony(MapEmbiggener.ModId).PatchAll();
             Unbound.RegisterHandshake(NetworkEventType.SyncModSettings, OnHandShakeCompleted);
+            
+            this.gameObject.AddComponent<OutOfBoundsUtils>();
+            
+            On.MainMenuHandler.Awake += (orig, self) =>
+            {
+                orig(self);
+                this.ExecuteAfterSeconds(0.5f, () =>
+                {
+                    // Create the bounds border
+                    OutOfBoundsUtils.CreateBorder();
+                });
+            };
         }
+
+        // Uncomment this to DEBUG the bounds with sliders
+        
+        // private void OnGUI()
+        // {
+        //     var minX = GUILayout.HorizontalSlider(OutOfBoundsUtils.minX, -50, 50, GUILayout.Width(300f));
+        //     var maxX = GUILayout.HorizontalSlider(OutOfBoundsUtils.maxX, -50, 50, GUILayout.Width(300f));
+        //     var minY = GUILayout.HorizontalSlider(OutOfBoundsUtils.minY, -40, 40, GUILayout.Width(300f));
+        //     var maxY = GUILayout.HorizontalSlider(OutOfBoundsUtils.maxY, -40, 40, GUILayout.Width(300f));
+        //     GUILayout.Space(10f);
+        //     var angle = GUILayout.HorizontalSlider(OutOfBoundsUtils.angle, 0, 360, GUILayout.Width(300f));
+        //     OutOfBoundsUtils.SetOOB(minX, maxX, minY, maxY, angle);
+        // }
+
         internal static void OnHandShakeCompleted()
         {
             if (PhotonNetwork.OfflineMode || PhotonNetwork.IsMasterClient)
@@ -131,9 +136,9 @@ namespace MapEmbiggener
             MapEmbiggener.suddenDeathMode = MapEmbiggener.SuddenDeathConfig.Value;
             MapEmbiggener.chaosMode = MapEmbiggener.ChaosConfig.Value;
 
-            Unbound.RegisterCredits(ModName, new String[] {"Pykess (Code)", "Ascyst (Project creation)"}, new string[] { "github", "buy pykess a coffee", "buy ascyst a coffee" }, new string[] { "https://github.com/Ascyst/MapEmbiggener", "https://www.buymeacoffee.com/Pykess", "https://www.buymeacoffee.com/Ascyst" });
-            Unbound.RegisterHandshake(ModId, OnHandShakeCompleted);
-            Unbound.RegisterMenu(ModName, () => { }, NewGUI, null, false);
+            Unbound.RegisterCredits(MapEmbiggener.ModName, new String[] {"Pykess (Code)", "Ascyst (Project creation)", "BossSloth (Customizable bounds)"}, new string[] { "github", "buy pykess a coffee", "buy ascyst a coffee" }, new string[] { "https://github.com/Ascyst/MapEmbiggener", "https://www.buymeacoffee.com/Pykess", "https://www.buymeacoffee.com/Ascyst" });
+            Unbound.RegisterHandshake(MapEmbiggener.ModId, OnHandShakeCompleted);
+            Unbound.RegisterMenu(MapEmbiggener.ModName, () => { }, this.NewGUI, null, false);
 
             // disable zooming during entire pick phase
             GameModeManager.AddHook(GameModeHooks.HookPickStart, (gm) => this.SetZoomModes(gm, false));
@@ -154,23 +159,18 @@ namespace MapEmbiggener
             GameModeManager.AddHook(GameModeHooks.HookPickEnd, Interface.PickEnd);
             GameModeManager.AddHook(GameModeHooks.HookPointEnd, Interface.PointEnd);
             GameModeManager.AddHook(GameModeHooks.HookGameEnd, Interface.GameEnd);
-            GameModeManager.AddHook(GameModeHooks.HookGameStart, ResetRotationDirection);
+            GameModeManager.AddHook(GameModeHooks.HookGameStart, this.ResetRotationDirection);
             GameModeManager.AddHook(GameModeHooks.HookRoundEnd, Interface.RoundEnd);
             GameModeManager.AddHook(GameModeHooks.HookBattleStart, Interface.BattleStart);
             GameModeManager.AddHook(GameModeHooks.HookPointStart, Interface.PointStart);
 
             // hooks for OOB patch
-            GameModeManager.AddHook(GameModeHooks.HookPointStart, (gm) => SetOOBEnabled(true));
-            GameModeManager.AddHook(GameModeHooks.HookPointEnd, (gm) => SetOOBEnabled(false));
+            GameModeManager.AddHook(GameModeHooks.HookPointStart, (gm) => OutOfBoundsUtils.SetOOBEnabled(true));
+            GameModeManager.AddHook(GameModeHooks.HookPointEnd, (gm) => OutOfBoundsUtils.SetOOBEnabled(false));
         }
         private IEnumerator ResetRotationDirection(IGameModeHandler gm)
         {
             MapEmbiggener.rotationDirection = 1f;
-            yield break;
-        }
-        private static IEnumerator SetOOBEnabled(bool enabled)
-        {
-            MapEmbiggener.OOBEnabled = enabled;
             yield break;
         }
         private void NewGUI(GameObject menu)
@@ -198,7 +198,7 @@ namespace MapEmbiggener
                 }
                 OnHandShakeCompleted();
             }
-            MenuHandler.CreateSlider("Map Size Multiplier", menu, 60, 0.5f, 3f, SizeConfig.Value, SliderChangedAction, out UnityEngine.UI.Slider slider);
+            MenuHandler.CreateSlider("Map Size Multiplier", menu, 60, 0.5f, 3f, MapEmbiggener.SizeConfig.Value, SliderChangedAction, out Slider slider);
             void ResetButton()
             {
                 slider.value = 1f;
@@ -220,8 +220,9 @@ namespace MapEmbiggener
                 MapEmbiggener.settingsChaosMode = MapEmbiggener.ChaosConfig.Value;
                 OnHandShakeCompleted();
             }
-            suddenDeathModeToggle = MenuHandler.CreateToggle(MapEmbiggener.SuddenDeathConfig.Value, "Sudden Death Mode", menu, suddenDeathModeToggleAction, 60).GetComponent<Toggle>();
-            chaosModeToggle = MenuHandler.CreateToggle(MapEmbiggener.ChaosConfig.Value, "Chaos Mode", menu, chaosModeToggleAction, 60).GetComponent<Toggle>();
+
+            this.suddenDeathModeToggle = MenuHandler.CreateToggle(MapEmbiggener.SuddenDeathConfig.Value, "Sudden Death Mode", menu, suddenDeathModeToggleAction, 60).GetComponent<Toggle>();
+            this.chaosModeToggle = MenuHandler.CreateToggle(MapEmbiggener.ChaosConfig.Value, "Chaos Mode", menu, chaosModeToggleAction, 60).GetComponent<Toggle>();
 
         }
         private IEnumerator SetZoomModes(IGameModeHandler gm, bool enable)
@@ -231,7 +232,7 @@ namespace MapEmbiggener
             {
                 MapEmbiggener.chaosMode = false;
                 MapEmbiggener.suddenDeathMode = false;
-                yield return ResetCamera(gm);
+                yield return this.ResetCamera(gm);
             }
             // restore settings
             else
@@ -245,6 +246,7 @@ namespace MapEmbiggener
         private IEnumerator StartPickPhaseCamera()
         {
             MapManager.instance.currentMap.Map.size = MapEmbiggener.defaultMapSize;
+            OutOfBoundsUtils.SetOOB(OutOfBoundsUtils.defaultX, OutOfBoundsUtils.defaultY);
 
             yield return new WaitForSecondsRealtime(1.5f);
 
@@ -253,6 +255,7 @@ namespace MapEmbiggener
         private IEnumerator EndPickPhaseCamera()
         {
             MapManager.instance.currentMap.Map.size = MapEmbiggener.defaultMapSize * MapEmbiggener.settingsSetSize;
+            OutOfBoundsUtils.SetOOB(OutOfBoundsUtils.defaultX * MapEmbiggener.settingsSetSize, OutOfBoundsUtils.defaultY * MapEmbiggener.settingsSetSize);
 
             yield return new WaitForSecondsRealtime(0.1f);
 
@@ -274,7 +277,7 @@ namespace MapEmbiggener
         private IEnumerator ResetCameraAfter(IGameModeHandler gm, float delay)
         {
             yield return new WaitForSecondsRealtime(0.5f);
-            yield return ResetCamera(gm);
+            yield return this.ResetCamera(gm);
             yield break;
         }
 
@@ -294,6 +297,8 @@ namespace MapEmbiggener
             }
             __instance.transform.localScale *= MapEmbiggener.setSize;
             __instance.size *= MapEmbiggener.setSize;
+            MapEmbiggener.zoomShrink = 1;
+            OutOfBoundsUtils.SetOOB(OutOfBoundsUtils.defaultX * MapEmbiggener.settingsSetSize, OutOfBoundsUtils.defaultY * MapEmbiggener.settingsSetSize);
         }
     }
 
@@ -441,13 +446,13 @@ namespace MapEmbiggener
                     }
                 }
 
-                GameObject Rendering = UnityEngine.GameObject.Find("/Game/Visual/Rendering ");
+                GameObject Rendering = GameObject.Find("/Game/Visual/Rendering ");
 
                 if (Rendering != null)
                 {
                     foreach (Transform transform in Rendering.GetComponentsInChildren<Transform>(true))
                     {
-                        transform.localScale = Vector3.one * UnityEngine.Mathf.Clamp(MapEmbiggener.setSize, 0.1f, 2f);
+                        transform.localScale = Vector3.one * Mathf.Clamp(MapEmbiggener.setSize, 0.1f, 2f);
                     }
                 }
 
@@ -456,28 +461,36 @@ namespace MapEmbiggener
         }
         private static float timerStart;
         private static float rotTimerStart;
-        private static System.Collections.IEnumerator GameModes(Map instance)
+        private static IEnumerator GameModes(Map instance)
         {
             if (instance == null) { yield break; }
-            timerStart = Time.time;
-            rotTimerStart = Time.time;
+            MapPatchStartMatch.timerStart = Time.time;
+            MapPatchStartMatch.rotTimerStart = Time.time;
             while (instance != null && instance.enabled)
             {
-                if (instance != null && (float)Traverse.Create(instance).Field("counter").GetValue() > 2f && instance.size > 1f && (MapEmbiggener.chaosMode || (MapEmbiggener.suddenDeathMode && CountPlayersAlive() <= 2)))
+                if (instance != null && (float)instance.GetFieldValue("counter") > 2f && (MapEmbiggener.chaosMode || (MapEmbiggener.suddenDeathMode && CountPlayersAlive() <= 2)))
                 {
-                    if (instance != null && Time.time > timerStart + MapEmbiggener.shrinkDelay)
+                    if (instance != null && Time.time > MapPatchStartMatch.timerStart + MapEmbiggener.shrinkDelay)
                     {
-                        timerStart = Time.time;
-                        instance.size *= MapEmbiggener.shrinkRate;
+                        MapPatchStartMatch.timerStart = Time.time;
+                        MapEmbiggener.zoomShrink *= MapEmbiggener.shrinkRate;
+                        instance.size = MapEmbiggener.defaultMapSize * MapEmbiggener.settingsSetSize *
+                                         MapEmbiggener.zoomShrink;
+                        OutOfBoundsUtils.SetOOB(
+                            OutOfBoundsUtils.defaultX * MapEmbiggener.settingsSetSize * MapEmbiggener.zoomShrink + 0.15f,
+                            OutOfBoundsUtils.defaultY * MapEmbiggener.settingsSetSize * MapEmbiggener.zoomShrink + 0.15f);
+                        
                     }
                 }
-                if (instance != null && (float)Traverse.Create(instance).Field("counter").GetValue() > 2f && instance.size > 1f && MapEmbiggener.chaosMode)
+                if (instance != null && (float)instance.GetFieldValue("counter") > 2f && MapEmbiggener.chaosMode)
                 {
-                    if (instance != null && Time.time > rotTimerStart + MapEmbiggener.rotationDelay)
+                    if (instance != null && Time.time > MapPatchStartMatch.rotTimerStart + MapEmbiggener.rotationDelay)
                     {
-                        rotTimerStart = Time.time;
+                        MapPatchStartMatch.rotTimerStart = Time.time;
                         Vector3 currentRot = Interface.GetCameraRot().eulerAngles;
-                        Interface.MoveCamera(angle: currentRot.z + MapEmbiggener.rotationDirection * MapEmbiggener.rotationRate);
+                        var angle = currentRot.z + MapEmbiggener.rotationDirection * MapEmbiggener.rotationRate;
+                        Interface.MoveCamera(angle: angle);
+                        OutOfBoundsUtils.SetAngle(angle);
                     }
                 }
                 yield return null;
@@ -486,169 +499,7 @@ namespace MapEmbiggener
         }
         private static int CountPlayersAlive()
         {
-            return PlayerManager.instance.players.Where(p => !p.data.dead).Count();
-        }
-    }
-
-    // extension methods for dealing with ultrawide displays
-    internal static class CameraExtension
-    {
-        private static float correction => (Screen.width - FixedScreen.fixedWidth) / 2f;
-        internal static Vector3 FixedWorldToScreenPoint(this Camera camera, Vector3 worldPoint)
-        {
-            Vector3 fixedScreenPoint = camera.WorldToScreenPoint(worldPoint);
-            if (!FixedScreen.isUltraWide) { return fixedScreenPoint; }
-
-            return new Vector3(fixedScreenPoint.x - correction, fixedScreenPoint.y, fixedScreenPoint.z);
-        }
-        internal static Vector3 FixedScreenToWorldPoint(this Camera camera, Vector3 fixedScreenPoint)
-        {
-            Vector3 worldPoint = camera.ScreenToWorldPoint(fixedScreenPoint);
-            if (!FixedScreen.isUltraWide) { return worldPoint; }
-
-            return new Vector3(fixedScreenPoint.x + correction, fixedScreenPoint.y, fixedScreenPoint.z);
-        }
-    }
-    
-    // extension for dealing with ultrawide displays
-    internal static class FixedScreen
-    {
-        internal static bool isUltraWide => ((float)Screen.width / (float)Screen.height - ratio >= eps);
-        private const float ratio = 16f / 9f;
-        private const float eps = 1E-1f;
-        internal static int fixedWidth
-        {
-            get
-            {
-                if (isUltraWide)
-                {
-                    // widescreen (or at least nonstandard screen)
-                    // we assume the height is correct (since the game seems to scale to force the height to match)
-                    return (int)UnityEngine.Mathf.RoundToInt(Screen.height * ratio);
-                }
-                else
-                {
-                    return Screen.width;
-                }
-            }
-            private set { }
-        }
-    }
-
-    [Serializable]
-    [HarmonyPatch(typeof(OutOfBoundsHandler), "LateUpdate")]
-    [HarmonyBefore(new string[] { "io.olavim.rounds.rwf" })]
-    class OutOfBoundsHandlerPatchLateUpdate
-    {
-        private static bool Prefix(OutOfBoundsHandler __instance, CharacterData ___data, float ___warningPercentage, ref float ___counter, ref bool ___almostOutOfBounds, ref bool ___outOfBounds, ref ChildRPC ___rpc)
-        {
-            if (!___data)
-            {
-                UnityEngine.GameObject.Destroy(__instance.gameObject);
-                return false; // skip the original (BAD IDEA)
-            }
-            //if (!(bool)Traverse.Create(___data.playerVel).Field("simulated").GetValue())
-            //{
-                //return false; // skip the original (BAD IDEA)
-            //}
-            if (!MapEmbiggener.OOBEnabled)
-            {
-                return false;
-            }
-            if (!___data.isPlaying)
-            {
-                return false; // skip the original (BAD IDEA)
-            }
-            /*
-            float x = Mathf.InverseLerp(-35.56f, 35.56f, data.transform.position.x);
-            float y = Mathf.InverseLerp(-20f, 20f, data.transform.position.y);
-            Vector3 vector = new Vector3(x, y, 0f);
-            vector = new Vector3(Mathf.Clamp(vector.x, 0f, 1f), Mathf.Clamp(vector.y, 0f, 1f), vector.z);
-            */
-            Vector3 vector = MainCam.instance.transform.GetComponent<Camera>().FixedWorldToScreenPoint(new Vector3(___data.transform.position.x, ___data.transform.position.y, 0f));
-
-            vector.x /= (float)FixedScreen.fixedWidth;
-            vector.y /= (float)Screen.height;
-
-            vector = new Vector3(Mathf.Clamp01(vector.x), Mathf.Clamp01(vector.y), 0f);
-
-            ___almostOutOfBounds = false;
-            ___outOfBounds = false;
-            if (vector.x <= 0f || vector.x >= 1f || vector.y >= 1f || vector.y <= 0f)
-            {
-                ___outOfBounds = true;
-            }
-            else if (vector.x < ___warningPercentage || vector.x > 1f - ___warningPercentage || vector.y > 1f - ___warningPercentage || vector.y < ___warningPercentage)
-            {
-                ___almostOutOfBounds = true;
-                if (vector.x < ___warningPercentage)
-                {
-                    vector.x = 0f;
-                }
-                if (vector.x > 1f - ___warningPercentage)
-                {
-                    vector.x = 1f;
-                }
-                if (vector.y < ___warningPercentage)
-                {
-                    vector.y = 0f;
-                }
-                if (vector.y > 1f - ___warningPercentage)
-                {
-                    vector.y = 1f;
-                }
-            }
-            ___counter = ___counter + TimeHandler.deltaTime;
-            if (___almostOutOfBounds && !___data.dead)
-            {
-                __instance.transform.position = (Vector3)typeof(OutOfBoundsHandler).InvokeMember("GetPoint",
-                                                    BindingFlags.Instance | BindingFlags.InvokeMethod |
-                                                    BindingFlags.NonPublic, null, __instance, new object[] { vector });
-                __instance.transform.rotation = Quaternion.LookRotation(Vector3.forward, -(___data.transform.position - __instance.transform.position));
-                if (___counter > 0.1f)
-                {
-                    ___counter = 0f;
-                    __instance.warning.Play();
-                }
-            }
-            if (___outOfBounds && !___data.dead)
-            {
-                ___data.sinceGrounded = 0f;
-                __instance.transform.position = (Vector3)typeof(OutOfBoundsHandler).InvokeMember("GetPoint",
-                                                    BindingFlags.Instance | BindingFlags.InvokeMethod |
-                                                    BindingFlags.NonPublic, null, __instance, new object[] { vector });
-                __instance.transform.rotation = Quaternion.LookRotation(Vector3.forward, -(___data.transform.position - __instance.transform.position));
-                if (___counter > 0.1f && ___data.view.IsMine)
-                {
-                    ___counter = 0f;
-                    if (___data.block.IsBlocking())
-                    {
-                        ___rpc.CallFunction("ShieldOutOfBounds");
-                        Traverse.Create(___data.playerVel).Field("velocity").SetValue((Vector2)Traverse.Create(___data.playerVel).Field("velocity").GetValue() * 0f);
-                        ___data.healthHandler.CallTakeForce(__instance.transform.up * 400f * (MapManager.instance.currentMap.Map.size / 20f) * (float)Traverse.Create(___data.playerVel).Field("mass").GetValue(), ForceMode2D.Impulse, false, true, 0f);
-                        ___data.transform.position = __instance.transform.position;
-                        return false; // skip the original (BAD IDEA)
-                    }
-                    ___rpc.CallFunction("OutOfBounds");
-                    ___data.healthHandler.CallTakeForce(__instance.transform.up * 200f * (MapManager.instance.currentMap.Map.size/20f) * (float)Traverse.Create(___data.playerVel).Field("mass").GetValue(), ForceMode2D.Impulse, false, true, 0f);
-                    ___data.healthHandler.CallTakeDamage(51f * __instance.transform.up, ___data.transform.position, null, null, true);
-                }
-            }
-            return false; // skip the original (BAD IDEA)
-
-        }
-    }
-
-    [Serializable]
-    [HarmonyPatch(typeof(OutOfBoundsHandler),"GetPoint")]
-    class OutOfBoundHandlerPatchGetPoint
-    {
-        private static bool Prefix(ref Vector3 __result, OutOfBoundsHandler __instance, Vector3 p)
-        {
-            Vector3 result = MainCam.instance.transform.GetComponent<Camera>().FixedScreenToWorldPoint(new Vector3(p.x * (float)FixedScreen.fixedWidth, p.y * (float)Screen.height, 0f));
-            __result = new Vector3(result.x, result.y, 0f);
-
-            return false; // skip the original (BAD IDEA)
+            return PlayerManager.instance.players.Count(p => !p.data.dead);
         }
     }
 
