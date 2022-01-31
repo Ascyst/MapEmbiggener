@@ -24,6 +24,9 @@ namespace MapEmbiggener
         internal static readonly string[] stickFightObjsToIgnore = new string[] { "Real", "Chain", "Platform", "TreadMill", "Spike(Spike)", "SpikeBall"};
         internal static readonly string[] stickFightSpawnerObjs = new string[] {"(Pusher)(Clone)", "Box(Clone)(Clone)" };
 
+        // array of object names which are NOT stickfightmaps objects, but contain the names of stickfightmaps objects above
+        internal static readonly string[] falsePositiveNonStickFightObjs = new string[] { "MovingPlatform" };
+
         public static ConfigEntry<float> SizeConfig;
         public static ConfigEntry<bool> ChaosConfig;
         public static ConfigEntry<bool> SuddenDeathConfig;
@@ -327,7 +330,7 @@ namespace MapEmbiggener
             {
                 if (transform == null) { break; }
 
-                if (transform.gameObject.name.ContainsAny(MapEmbiggener.stickFightObjsToIgnore)) { return true; }
+                if (transform.gameObject.name.ContainsAny(MapEmbiggener.stickFightObjsToIgnore) && !transform.gameObject.name.ContainsAny(MapEmbiggener.falsePositiveNonStickFightObjs)) { return true; }
 
                 transform = transform.parent;
 
@@ -402,7 +405,7 @@ namespace MapEmbiggener
                     if (rig.gameObject.IsStickFightObject())
                     {
 
-                        if (rig.gameObject.name.Contains("PLatform"))
+                        if (rig.gameObject.name.Contains("Platform"))
                         {
                             rig.transform.localScale /= MapEmbiggener.setSize;
                         }
@@ -421,7 +424,7 @@ namespace MapEmbiggener
                         continue;
                     }
 
-                    if (rig.gameObject.GetComponentInChildren<MoveSequence>() == null)
+                    if (rig.gameObject.GetComponentInChildren<MoveSequence>(true) == null)
                     {
                         rig.mass *= MapEmbiggener.setSize;
 
@@ -435,14 +438,14 @@ namespace MapEmbiggener
                     }
                     else
                     {
-                        
                         List<Vector2> newPos = new List<Vector2>() { };
-                        foreach (Vector2 pos in rig.gameObject.GetComponentInChildren<MoveSequence>().positions)
+                        MoveSequence move = rig.gameObject.GetComponentInChildren<MoveSequence>(true);
+                        foreach (Vector2 pos in move.positions)
                         {
                             newPos.Add(pos * MapEmbiggener.setSize);
                         }
-                        rig.gameObject.GetComponentInChildren<MoveSequence>().positions = newPos.ToArray();
-                        Traverse.Create(rig.gameObject.GetComponentInChildren<MoveSequence>()).Field("startPos").SetValue((Vector2)Traverse.Create(rig.gameObject.GetComponentInChildren<MoveSequence>()).Field("startPos").GetValue() * MapEmbiggener.setSize);
+                        move.positions = newPos.ToArray();
+                        move.SetFieldValue("startPos", MapEmbiggener.setSize * (Vector2)move.GetFieldValue("startPos"));
                     }
                 }
 
