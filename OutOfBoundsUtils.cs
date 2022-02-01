@@ -101,9 +101,8 @@ namespace MapEmbiggener
         public static bool IsInsideBounds(Vector2 point, out Vector3 vector)
         {
             var radical = OutOfBoundsUtils.angle /-180f * Mathf.PI;
-            var center = OutOfBoundsUtils.border.transform.position;
-            var x = point.x - center.x;
-            var y = point.y - center.y;
+            var x = point.x;
+            var y = point.y;
             var cos = Mathf.Cos(radical);
             var sin = Mathf.Sin(radical);
             var x1 = cos * x - sin * y;
@@ -122,9 +121,8 @@ namespace MapEmbiggener
         public static bool IsAlmostOutsideRect(Vector2 point, float warningPercentage, out Vector3 vector)
         {
             var radical = OutOfBoundsUtils.angle /-180f * Mathf.PI;
-            var center = OutOfBoundsUtils.border.transform.position;
-            var x = point.x - center.x;
-            var y = point.y - center.y;
+            var x = point.x;
+            var y = point.y;
             var cos = Mathf.Cos(radical);
             var sin = Mathf.Sin(radical);
             var x1 = cos * x - sin * y;
