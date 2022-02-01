@@ -13,6 +13,7 @@ using UnboundLib.Utils.UI;
 using TMPro;
 using UnityEngine.UI;
 using BepInEx.Configuration;
+using MapEmbiggener.UI;
 
 namespace MapEmbiggener
 {
@@ -58,6 +59,12 @@ namespace MapEmbiggener
 
         internal static float defaultMapSize;
 
+#if DEBUG
+        internal static readonly bool DEBUG = true;
+#else
+        internal static readonly bool DEBUG = false;
+#endif
+
         internal static Interface.ChangeUntil restoreSettingsOn;
 
         private Toggle suddenDeathModeToggle;
@@ -89,18 +96,17 @@ namespace MapEmbiggener
             };
         }
 
-        // Uncomment this to DEBUG the bounds with sliders
-        
-        // private void OnGUI()
-        // {
-        //     var minX = GUILayout.HorizontalSlider(OutOfBoundsUtils.minX, -50, 50, GUILayout.Width(300f));
-        //     var maxX = GUILayout.HorizontalSlider(OutOfBoundsUtils.maxX, -50, 50, GUILayout.Width(300f));
-        //     var minY = GUILayout.HorizontalSlider(OutOfBoundsUtils.minY, -40, 40, GUILayout.Width(300f));
-        //     var maxY = GUILayout.HorizontalSlider(OutOfBoundsUtils.maxY, -40, 40, GUILayout.Width(300f));
-        //     GUILayout.Space(10f);
-        //     var angle = GUILayout.HorizontalSlider(OutOfBoundsUtils.angle, 0, 360, GUILayout.Width(300f));
-        //     OutOfBoundsUtils.SetOOB(minX, maxX, minY, maxY, angle);
-        // }
+        private void OnGUI()
+        {
+            if (!MapEmbiggener.DEBUG) { return; }
+            var minX = GUILayout.HorizontalSlider(OutOfBoundsUtils.minX, -50, 50, GUILayout.Width(300f));
+            var maxX = GUILayout.HorizontalSlider(OutOfBoundsUtils.maxX, -50, 50, GUILayout.Width(300f));
+            var minY = GUILayout.HorizontalSlider(OutOfBoundsUtils.minY, -40, 40, GUILayout.Width(300f));
+            var maxY = GUILayout.HorizontalSlider(OutOfBoundsUtils.maxY, -40, 40, GUILayout.Width(300f));
+            GUILayout.Space(10f);
+            var angle = GUILayout.HorizontalSlider(OutOfBoundsUtils.angle, 0, 360, GUILayout.Width(300f));
+            OutOfBoundsUtils.SetOOB(minX, maxX, minY, maxY, angle);
+        }
 
         internal static void OnHandShakeCompleted()
         {
@@ -171,6 +177,7 @@ namespace MapEmbiggener
             GameModeManager.AddHook(GameModeHooks.HookPointStart, (gm) => OutOfBoundsUtils.SetOOBEnabled(true));
             GameModeManager.AddHook(GameModeHooks.HookPointEnd, (gm) => OutOfBoundsUtils.SetOOBEnabled(false));
         }
+
         private IEnumerator ResetRotationDirection(IGameModeHandler gm)
         {
             MapEmbiggener.rotationDirection = 1f;

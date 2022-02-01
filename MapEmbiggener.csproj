@@ -41,6 +41,7 @@
     <Compile Include="Patches\RemoveAfterSeconds.cs" />
     <Compile Include="Patches\ScreenEdgeBounce.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UI\OutOfBoundsParticles.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
@@ -90,6 +91,10 @@
     </Reference>
     <Reference Include="UnityEngine.Physics2DModule">
       <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\ROUNDS\Rounds_Data\Managed\UnityEngine.Physics2DModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.SpriteMaskModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\ROUNDS\Rounds_Data\Managed\UnityEngine.SpriteMaskModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.TextCoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

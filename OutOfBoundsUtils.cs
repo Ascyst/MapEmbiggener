@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using UnityEngine;
+using MapEmbiggener.UI;
 
 namespace MapEmbiggener
 {
@@ -20,6 +21,7 @@ namespace MapEmbiggener
         public static float angle { get; private set; } = 0;
 
         public static GameObject border {get; private set; }
+        public static GameObject particleMask { get; internal set; }
 
         private static bool _OOBEnabled;
         internal static bool OOBEnabled
@@ -63,6 +65,12 @@ namespace MapEmbiggener
             rect.sizeDelta = new Vector2((maxX - minX)*(1930/OutOfBoundsUtils.defaultX/2), (maxY - minY)*(1090/OutOfBoundsUtils.defaultY/2));
             rect.rotation = Quaternion.Euler(0, 0, OutOfBoundsUtils.angle);
             OutOfBoundsUtils.border.transform.position = new Vector3(minX + (maxX - minX) / 2, minY + (maxY - minY) / 2, 0);
+
+            if (OutOfBoundsUtils.particleMask == null) return;
+            OutOfBoundsUtils.particleMask.transform.rotation = Quaternion.Euler(0, 0, 0);
+            OutOfBoundsParticles.SetSpriteSize(OutOfBoundsUtils.particleMask.GetComponent<SpriteMask>(), new Vector2((maxX - minX) * (1930 / OutOfBoundsUtils.defaultX / 2), (maxY - minY) * (1090 / OutOfBoundsUtils.defaultY / 2)));
+            OutOfBoundsUtils.particleMask.transform.rotation = Quaternion.Euler(0, 0, OutOfBoundsUtils.angle);
+            OutOfBoundsUtils.particleMask.transform.position = new Vector3(minX + (maxX - minX) / 2, minY + (maxY - minY) / 2, OutOfBoundsUtils.particleMask.transform.position.z);
         }
 
         public static void SetAngle(float angle)
@@ -143,6 +151,9 @@ namespace MapEmbiggener
             OutOfBoundsUtils.border.transform.position = Vector3.zero;
             OutOfBoundsUtils.border.transform.localScale = new Vector3(0.037f, 0.037f, 0.037f);
             canvas.renderMode = RenderMode.WorldSpace;
+
+            // make particles
+            GameObject Particles = new GameObject("OutOfBoundsParticles", typeof(OutOfBoundsParticles));
         }
     }
 }
