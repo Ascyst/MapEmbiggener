@@ -31,11 +31,22 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Controllers\BoundsController.cs" />
+    <Compile Include="Controllers\CameraController.cs" />
+    <Compile Include="Controllers\Default\DefaultBoundsController.cs" />
+    <Compile Include="Controllers\Default\DefaultMapController.cs" />
+    <Compile Include="Controllers\MapController.cs" />
+    <Compile Include="Controllers\Default\DefaultCameraController.cs" />
+    <Compile Include="Controllers\IBoundsController.cs" />
+    <Compile Include="Controllers\ICameraController.cs" />
+    <Compile Include="Controllers\IMapController.cs" />
+    <Compile Include="Controllers\ControllerManager.cs" />
     <Compile Include="Extensions\GameObject.cs" />
     <Compile Include="Extensions\String.cs" />
     <Compile Include="Interface.cs" />
     <Compile Include="MapEmbiggener.cs" />
     <Compile Include="OutOfBoundsUtils.cs" />
+    <Compile Include="Patches\CameraZoomHandler.cs" />
     <Compile Include="Patches\Map.cs" />
     <Compile Include="Patches\OutOfBoundsHandlerPatch.cs" />
     <Compile Include="Patches\RemoveAfterSeconds.cs" />

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
 using MapEmbiggener.Extensions;
+using MapEmbiggener.Controllers;
 
 namespace MapEmbiggener.Patches
 {
@@ -18,12 +19,12 @@ namespace MapEmbiggener.Patches
 
             foreach (SpawnPoint spawnPoint in __instance.GetComponentsInChildren<SpawnPoint>())
             {
-                spawnPoint.localStartPos *= MapEmbiggener.setSize;
+                spawnPoint.localStartPos *= ControllerManager.MapSize;
             }
-            __instance.transform.localScale *= MapEmbiggener.setSize;
-            __instance.size *= MapEmbiggener.setSize;
-            MapEmbiggener.zoomShrink = 1;
-            OutOfBoundsUtils.SetOOB(OutOfBoundsUtils.defaultX * MapEmbiggener.settingsSetSize, OutOfBoundsUtils.defaultY * MapEmbiggener.settingsSetSize);
+            __instance.transform.localScale *= ControllerManager.MapSize;
+            __instance.size *= ControllerManager.MapSize;
+            //MapEmbiggener.zoomShrink = 1;
+            //OutOfBoundsUtils.SetOOB(OutOfBoundsUtils.defaultX * MapEmbiggener.settingsSetSize, OutOfBoundsUtils.defaultY * MapEmbiggener.settingsSetSize);
         }
     }
     [HarmonyPatch(typeof(Map), "StartMatch")]
@@ -38,7 +39,7 @@ namespace MapEmbiggener.Patches
                 {
                     if (part.gameObject.IsStickFightObject())
                     {
-                        part.transform.localScale *= MapEmbiggener.setSize;
+                        part.transform.localScale *= ControllerManager.MapSize;
                     }
                 }
                 foreach (Rigidbody2D rig in __instance.allRigs)
@@ -49,7 +50,7 @@ namespace MapEmbiggener.Patches
                     {
                         if (rig.gameObject.GetComponent<PhotonView>().IsMine)
                         {
-                            rig.gameObject.transform.position = new Vector3(MapEmbiggener.setSize * rig.gameObject.transform.position.x, rig.gameObject.transform.position.y * MapEmbiggener.setSize, rig.gameObject.transform.position.z);
+                            rig.gameObject.transform.position = new Vector3(ControllerManager.MapSize * rig.gameObject.transform.position.x, rig.gameObject.transform.position.y * ControllerManager.MapSize, rig.gameObject.transform.position.z);
                         }
                     }
 
@@ -62,18 +63,18 @@ namespace MapEmbiggener.Patches
 
                         if (rig.gameObject.name.Contains("PLatform"))
                         {
-                            rig.transform.localScale /= MapEmbiggener.setSize;
+                            rig.transform.localScale /= ControllerManager.MapSize;
                         }
 
-                        rig.mass *= MapEmbiggener.setSize;
+                        rig.mass *= ControllerManager.MapSize;
 
                         // increase the strength of chains
                         if (rig.gameObject.name.Contains("Chain"))
                         {
-                            if (rig.gameObject.GetComponent<ForceMultiplier>() != null) { rig.gameObject.GetComponent<ForceMultiplier>().multiplier *= MapEmbiggener.setSize; }
+                            if (rig.gameObject.GetComponent<ForceMultiplier>() != null) { rig.gameObject.GetComponent<ForceMultiplier>().multiplier *= ControllerManager.MapSize; }
                             foreach (DistanceJoint2D joint in rig.gameObject.GetComponents<DistanceJoint2D>())
                             {
-                                joint.distance *= MapEmbiggener.setSize;
+                                joint.distance *= ControllerManager.MapSize;
                             }
                         }
                         continue;
@@ -81,7 +82,7 @@ namespace MapEmbiggener.Patches
 
                     if (rig.gameObject.GetComponentInChildren<MoveSequence>(true) == null)
                     {
-                        rig.mass *= MapEmbiggener.setSize;
+                        rig.mass *= ControllerManager.MapSize;
 
                         // if its a maps extended object, then only change its size on the host client
                         if (rig.gameObject.IsMapsExtObject() && !rig.gameObject.GetComponent<PhotonView>().IsMine)
@@ -89,7 +90,7 @@ namespace MapEmbiggener.Patches
                             continue;
                         }
 
-                        rig.transform.localScale *= MapEmbiggener.setSize;
+                        rig.transform.localScale *= ControllerManager.MapSize;
                     }
                     else
                     {
@@ -97,10 +98,10 @@ namespace MapEmbiggener.Patches
                         MoveSequence move = rig.gameObject.GetComponentInChildren<MoveSequence>(true);
                         foreach (Vector2 pos in move.positions)
                         {
-                            newPos.Add(pos * MapEmbiggener.setSize);
+                            newPos.Add(pos * ControllerManager.MapSize);
                         }
                         move.positions = newPos.ToArray();
-                        move.SetFieldValue("startPos", MapEmbiggener.setSize * (Vector2)move.GetFieldValue("startPos"));
+                        move.SetFieldValue("startPos", ControllerManager.MapSize * (Vector2)move.GetFieldValue("startPos"));
                     }
                 }
 
@@ -110,13 +111,14 @@ namespace MapEmbiggener.Patches
                 {
                     foreach (Transform transform in Rendering.GetComponentsInChildren<Transform>(true))
                     {
-                        transform.localScale = Vector3.one * Mathf.Clamp(MapEmbiggener.setSize, 0.1f, 2f);
+                        transform.localScale = Vector3.one * Mathf.Clamp(ControllerManager.MapSize, 0.1f, 2f);
                     }
                 }
 
-                Unbound.Instance.StartCoroutine(GameModes(__instance));
+                //Unbound.Instance.StartCoroutine(GameModes(__instance));
             });
         }
+        /*
         private static float timerStart;
         private static float rotTimerStart;
         private static IEnumerator GameModes(Map instance)
@@ -158,6 +160,6 @@ namespace MapEmbiggener.Patches
         private static int CountPlayersAlive()
         {
             return PlayerManager.instance.players.Count(p => !p.data.dead);
-        }
+        }*/
     }
 }

@@ -16,9 +16,9 @@ namespace MapEmbiggener.UI
         }
 
         private const int layer = 26;
-        private const float DefaultGravity = 0f;
-        private static readonly Color DefaultColorMin = new Color(0f, 0f, 0f, 0.15f);
-        private static readonly Color DefaultColorMax = new Color(1f, 0f, 0f, 0.15f);
+        public const float DefaultGravity = 0f;
+        public static readonly Color DefaultColorMin = new Color(0f, 0f, 0f, 0.15f);
+        public static readonly Color DefaultColorMax = new Color(1f, 0f, 0f, 0.15f);
 
         private static GameObject _Cam = null;
 

@@ -9,6 +9,7 @@ using System.Collections.Generic;
 
 namespace MapEmbiggener
 {
+    /*
     public static class Interface
     {
         public static float GetCurrentSetSize()
@@ -229,5 +230,5 @@ namespace MapEmbiggener
             Custom,
             Forever
         }
-    }
+    }*/
 }

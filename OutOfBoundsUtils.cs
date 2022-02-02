@@ -7,8 +7,9 @@ namespace MapEmbiggener
 {
     public class OutOfBoundsUtils : MonoBehaviour
     {
-        public static readonly float defaultX = 35.56f;
-        public static readonly float defaultY = 20f;
+        public const float defaultX = 35.56f;
+        public const float defaultY = 20f;
+        public const float defaultAngle = 0f;
 
         public static float width => -OutOfBoundsUtils.minX+OutOfBoundsUtils.maxX;
         public static float height => -OutOfBoundsUtils.minY+OutOfBoundsUtils.maxY;
