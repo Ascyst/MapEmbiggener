@@ -29,13 +29,27 @@ namespace MapEmbiggener.Controllers.Default
         }
         public override void OnUpdate()
         {
-            if (MapEmbiggener.suddenDeathMode && this.battleOnGoing && this.PlayersAlive == 2)
+            if (MapEmbiggener.suddenDeathMode && this.battleOnGoing)
             {
                 this.Damage = OutOfBoundsDamage.Normal;
-                this.MaxXTarget = -1f + OutOfBoundsUtils.defaultX * ControllerManager.Zoom / (MapManager.instance?.currentMap?.Map?.size ?? 1f ) ;
-                this.MinXTarget = 1f - OutOfBoundsUtils.defaultX * ControllerManager.Zoom / (MapManager.instance?.currentMap?.Map?.size ?? 1f ) ;
-                this.MaxYTarget = 0f;
-                this.MinYTarget = 0f;
+                if (this.PlayersAlive == 2)
+                {
+                    this.MaxXTarget = -1f + OutOfBoundsUtils.defaultX * ControllerManager.Zoom / (MapManager.instance?.currentMap?.Map?.size ?? 1f ) ;
+                    this.MinXTarget = 1f - OutOfBoundsUtils.defaultX * ControllerManager.Zoom / (MapManager.instance?.currentMap?.Map?.size ?? 1f ) ;
+                    this.MaxYTarget = 0f;
+                    this.MinYTarget = 0f;
+                    this.ParticleGravityTarget = -0.1f;
+                    this.ParticleGravitySpeed = null;
+                }
+                else
+                {
+                    this.MaxXTarget = OutOfBoundsUtils.defaultX * MapEmbiggener.setSize;
+                    this.MinXTarget = -OutOfBoundsUtils.defaultX * MapEmbiggener.setSize;
+                    this.MaxYTarget = OutOfBoundsUtils.defaultY * MapEmbiggener.setSize;
+                    this.MinYTarget = -OutOfBoundsUtils.defaultY * MapEmbiggener.setSize;
+                    this.ParticleGravityTarget = 0f;
+                    this.ParticleGravitySpeed = null;
+                }
                 this.XSpeed = SuddenDeathXSpeed;
                 this.YSpeed = SuddenDeathYSpeed;
                 this.AngleTarget = 0f;
@@ -52,6 +66,8 @@ namespace MapEmbiggener.Controllers.Default
                 this.YSpeed = ChaosModeYSpeed;
                 this.AngleTarget = ControllerManager.Angle + this.chaosModeSign;
                 this.AngularSpeed = ChaosModeAngularSpeed;
+                this.ParticleGravityTarget = this.chaosModeSign;
+                this.ParticleGravitySpeed = null;
             }
             else
             {
@@ -64,6 +80,8 @@ namespace MapEmbiggener.Controllers.Default
                 this.XSpeed = null;
                 this.YSpeed = null;
                 this.AngularSpeed = null;
+                this.ParticleGravityTarget = null;
+                this.ParticleGravitySpeed = null;
 
             }
         }
