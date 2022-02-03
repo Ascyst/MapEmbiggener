@@ -86,18 +86,6 @@ namespace MapEmbiggener
             };
         }
 
-        private void OnGUI()
-        {
-            if (!MapEmbiggener.DEBUG) { return; }
-            var minX = GUILayout.HorizontalSlider(OutOfBoundsUtils.minX, -50, 50, GUILayout.Width(300f));
-            var maxX = GUILayout.HorizontalSlider(OutOfBoundsUtils.maxX, -50, 50, GUILayout.Width(300f));
-            var minY = GUILayout.HorizontalSlider(OutOfBoundsUtils.minY, -40, 40, GUILayout.Width(300f));
-            var maxY = GUILayout.HorizontalSlider(OutOfBoundsUtils.maxY, -40, 40, GUILayout.Width(300f));
-            GUILayout.Space(10f);
-            var angle = GUILayout.HorizontalSlider(OutOfBoundsUtils.angle, 0, 360, GUILayout.Width(300f));
-            OutOfBoundsUtils.SetOOB(minX, maxX, minY, maxY, angle);
-        }
-
         internal static void OnHandShakeCompleted()
         {
             if (PhotonNetwork.OfflineMode || PhotonNetwork.IsMasterClient)
@@ -132,7 +120,7 @@ namespace MapEmbiggener
             MapEmbiggener.suddenDeathMode = MapEmbiggener.SuddenDeathConfig.Value;
             MapEmbiggener.chaosMode = MapEmbiggener.ChaosConfig.Value;
 
-            Unbound.RegisterCredits(MapEmbiggener.ModName, new String[] {"Pykess (Code)", "Ascyst (Project creation)", "BossSloth (Customizable bounds)"}, new string[] { "github", "support pykess", "support ascyst", "support bosssloth" }, new string[] { "https://github.com/pdcook/MapEmbiggener", "https://ko-fi.com/pykess", "https://www.buymeacoffee.com/Ascyst", "https://www.buymeacoffee.com/BossSloth" });
+            Unbound.RegisterCredits(MapEmbiggener.ModName, new String[] {"Pykess", "Ascyst (Project creation)", "BossSloth (Customizable bounds)"}, new string[] { "github", "support pykess", "support ascyst", "support bosssloth" }, new string[] { "https://github.com/pdcook/MapEmbiggener", "https://ko-fi.com/pykess", "https://www.buymeacoffee.com/Ascyst", "https://www.buymeacoffee.com/BossSloth" });
             Unbound.RegisterHandshake(MapEmbiggener.ModId, OnHandShakeCompleted);
             Unbound.RegisterMenu(MapEmbiggener.ModName, () => { }, this.NewGUI, null, false);
 
@@ -160,25 +148,11 @@ namespace MapEmbiggener
         {
             MenuHandler.CreateText("Map Embiggener Options", menu, out TextMeshProUGUI _);
             MenuHandler.CreateText(" ", menu, out TextMeshProUGUI _, 30);
-            MenuHandler.CreateText(" ", menu, out TextMeshProUGUI warning, 30, true, Color.red);
-            MenuHandler.CreateText(" ", menu, out TextMeshProUGUI _, 30);
             void SliderChangedAction(float val)
             {
                 MapEmbiggener.settingsSetSize = val;
                 MapEmbiggener.SizeConfig.Value = val;
                 MapEmbiggener.setSize = val;
-                if (val > 2f)
-                {
-                    warning.text = "warning: scaling maps beyond 2× can cause gameplay difficulties and visual glitches".ToUpper();
-                }
-                else if (val < 1f)
-                {
-                    warning.text = "warning: scaling maps below 1× can cause gameplay difficulties and visual glitches".ToUpper();
-                }
-                else
-                {
-                    warning.text = " ";
-                }
                 OnHandShakeCompleted();
             }
             MenuHandler.CreateSlider("Map Size Multiplier", menu, 60, 0.5f, 3f, MapEmbiggener.SizeConfig.Value, SliderChangedAction, out Slider slider);

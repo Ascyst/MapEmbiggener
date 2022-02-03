@@ -7,10 +7,15 @@ using System.Collections;
 using MapEmbiggener.Controllers.Default;
 using MapEmbiggener.UI;
 using UnboundLib.GameModes;
+using UnboundLib.Networking;
+using UnboundLib;
+using Photon.Pun;
 namespace MapEmbiggener.Controllers
 {
-    class ControllerManager : MonoBehaviour
+    public class ControllerManager : MonoBehaviour
     {
+        private const int SyncPeriod = 10; // how often to sync, in frames
+        private int currentFrame = 0;
 
         public const float DefaultZoom = 20f;
         public static readonly Vector3 DefaultCameraPosition = new Vector3(0f, 0f, -100f);
@@ -330,7 +335,32 @@ namespace MapEmbiggener.Controllers
 
             }
 
+            // syncing
+            this.currentFrame++;
+            if (this.currentFrame > SyncPeriod)
+            {
+                this.currentFrame = 0;
+                if (!PhotonNetwork.OfflineMode && PhotonNetwork.IsMasterClient) { NetworkingManager.RPC_Others(typeof(ControllerManager), nameof(RPCA_SyncCurrentProperties), Zoom, CameraPosition, CameraRotation, MapSize, (byte)Damage, MaxX, MaxY, MinX, MinY, Angle); }
+            }
+
         }
+
+        [UnboundRPC]
+        private static void RPCA_SyncCurrentProperties(float zoom, Vector3 cameraPos, Vector3 cameraRot, float mapSize, byte damage, float maxX, float maxY, float minX, float minY, float angle)
+        {
+            Zoom = zoom;
+            CameraPosition = cameraPos;
+            CameraRotation = cameraRot;
+            MapSize = mapSize;
+            Damage = (OutOfBoundsDamage)damage;
+            MaxX = maxX;
+            MaxY = maxY;
+            MinX = minX;
+            MinY = minY;
+            Angle = angle;
+        }
+
+
         #region gamemodehooks     
         public static IEnumerator OnInitStart(IGameModeHandler gm)
         {
