@@ -111,55 +111,10 @@ namespace MapEmbiggener.Patches
                 {
                     foreach (Transform transform in Rendering.GetComponentsInChildren<Transform>(true))
                     {
-                        transform.localScale = Vector3.one * Mathf.Clamp(ControllerManager.MapSize, 0.1f, 2f);
+                        transform.localScale = new Vector3(ControllerManager.MapSize, ControllerManager.MapSize, transform.localScale.z);// Vector3.one * Mathf.Clamp(ControllerManager.MapSize, 0.1f, 2f);
                     }
                 }
-
-                //Unbound.Instance.StartCoroutine(GameModes(__instance));
             });
         }
-        /*
-        private static float timerStart;
-        private static float rotTimerStart;
-        private static IEnumerator GameModes(Map instance)
-        {
-            if (instance == null) { yield break; }
-            MapPatchStartMatch.timerStart = Time.time;
-            MapPatchStartMatch.rotTimerStart = Time.time;
-            while (instance != null && instance.enabled)
-            {
-                if (instance != null && (float)instance.GetFieldValue("counter") > 2f && (MapEmbiggener.chaosMode || (MapEmbiggener.suddenDeathMode && CountPlayersAlive() <= 2)))
-                {
-                    if (instance != null && Time.time > MapPatchStartMatch.timerStart + MapEmbiggener.shrinkDelay)
-                    {
-                        MapPatchStartMatch.timerStart = Time.time;
-                        MapEmbiggener.zoomShrink *= MapEmbiggener.shrinkRate;
-                        instance.size = MapEmbiggener.defaultMapSize * MapEmbiggener.settingsSetSize *
-                                         MapEmbiggener.zoomShrink;
-                        OutOfBoundsUtils.SetOOB(
-                            OutOfBoundsUtils.defaultX * MapEmbiggener.settingsSetSize * MapEmbiggener.zoomShrink + 0.15f,
-                            OutOfBoundsUtils.defaultY * MapEmbiggener.settingsSetSize * MapEmbiggener.zoomShrink + 0.15f);
-
-                    }
-                }
-                if (instance != null && (float)instance.GetFieldValue("counter") > 2f && MapEmbiggener.chaosMode)
-                {
-                    if (instance != null && Time.time > MapPatchStartMatch.rotTimerStart + MapEmbiggener.rotationDelay)
-                    {
-                        MapPatchStartMatch.rotTimerStart = Time.time;
-                        Vector3 currentRot = Interface.GetCameraRot().eulerAngles;
-                        var angle = currentRot.z + MapEmbiggener.rotationDirection * MapEmbiggener.rotationRate;
-                        Interface.MoveCamera(angle: angle);
-                        OutOfBoundsUtils.SetAngle(angle);
-                    }
-                }
-                yield return null;
-            }
-            yield break;
-        }
-        private static int CountPlayersAlive()
-        {
-            return PlayerManager.instance.players.Count(p => !p.data.dead);
-        }*/
     }
 }

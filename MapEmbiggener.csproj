@@ -44,7 +44,6 @@
     <Compile Include="Extensions\GameObject.cs" />
     <Compile Include="Extensions\OutOfBoundsHandler.cs" />
     <Compile Include="Extensions\String.cs" />
-    <Compile Include="Interface.cs" />
     <Compile Include="MapEmbiggener.cs" />
     <Compile Include="OutOfBoundsUtils.cs" />
     <Compile Include="Patches\CameraZoomHandler.cs" />

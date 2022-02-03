@@ -49,15 +49,6 @@ namespace MapEmbiggener
         internal static bool settingsSuddenDeathMode = false;
         internal static bool settingsChaosMode = false;
 
-        internal static float shrinkRate;
-        internal static float zoomShrink = 1;
-
-        internal static readonly float rotationRate = 0.1f;
-        internal static float rotationDirection = 1f;
-        internal static readonly float rotationDelay = 0.05f;
-        private static readonly float defaultShrinkRate = 0.998f;
-        internal static readonly float shrinkDelay = 0.05f;
-
         internal static float defaultMapSize;
 
 #if DEBUG
@@ -73,9 +64,6 @@ namespace MapEmbiggener
 
         private void Awake()
         {
-            MapEmbiggener.shrinkRate = MapEmbiggener.defaultShrinkRate;
-            //MapEmbiggener.restoreSettingsOn = Interface.ChangeUntil.Forever;
-
             // bind configs with BepInEx
             MapEmbiggener.SizeConfig = this.Config.Bind("MapEmbiggener", "Size", 1f, "Size to scale maps to");
             MapEmbiggener.SuddenDeathConfig = this.Config.Bind("MapEmbiggener", "SuddenDeathMode", false, "Enable Sudden Death mode");
@@ -114,10 +102,8 @@ namespace MapEmbiggener
         {
             if (PhotonNetwork.OfflineMode || PhotonNetwork.IsMasterClient)
             {
-                //MapEmbiggener.restoreSettingsOn = Interface.ChangeUntil.Forever;
-
                 NetworkingManager.RPC_Others(typeof(MapEmbiggener), nameof(SyncSettings), new object[] { MapEmbiggener.settingsSetSize, MapEmbiggener.settingsSuddenDeathMode, MapEmbiggener.settingsChaosMode });
-                NetworkingManager.RPC(typeof(MapEmbiggener), nameof(SyncCurrentOptions), new object[] { MapEmbiggener.settingsSetSize, MapEmbiggener.settingsSuddenDeathMode, MapEmbiggener.settingsChaosMode, MapEmbiggener.defaultShrinkRate});
+                NetworkingManager.RPC(typeof(MapEmbiggener), nameof(SyncCurrentOptions), new object[] { MapEmbiggener.settingsSetSize, MapEmbiggener.settingsSuddenDeathMode, MapEmbiggener.settingsChaosMode});
             }
         }
 
@@ -134,7 +120,6 @@ namespace MapEmbiggener
             MapEmbiggener.setSize = setSize;
             MapEmbiggener.suddenDeathMode = suddenDeath;
             MapEmbiggener.chaosMode = chaos;
-            MapEmbiggener.shrinkRate = rate;
             //MapEmbiggener.restoreSettingsOn = restore;
         }
         private void Start()
@@ -150,32 +135,6 @@ namespace MapEmbiggener
             Unbound.RegisterCredits(MapEmbiggener.ModName, new String[] {"Pykess (Code)", "Ascyst (Project creation)", "BossSloth (Customizable bounds)"}, new string[] { "github", "support pykess", "support ascyst", "support bosssloth" }, new string[] { "https://github.com/pdcook/MapEmbiggener", "https://ko-fi.com/pykess", "https://www.buymeacoffee.com/Ascyst", "https://www.buymeacoffee.com/BossSloth" });
             Unbound.RegisterHandshake(MapEmbiggener.ModId, OnHandShakeCompleted);
             Unbound.RegisterMenu(MapEmbiggener.ModName, () => { }, this.NewGUI, null, false);
-
-            // disable zooming during entire pick phase
-            //GameModeManager.AddHook(GameModeHooks.HookPickStart, (gm) => this.SetZoomModes(gm, false));
-            //GameModeManager.AddHook(GameModeHooks.HookPlayerPickStart, (gm) => this.SetZoomModes(gm, false));
-            // re-enable zooming when point starts
-            //GameModeManager.AddHook(GameModeHooks.HookPointStart, (gm) => this.SetZoomModes(gm, true));
-
-            // set camera zoom level for pick phase
-            //GameModeManager.AddHook(GameModeHooks.HookPickStart, (gm) => this.StartPickPhaseCamera());
-            //GameModeManager.AddHook(GameModeHooks.HookPickEnd, (gm) => this.EndPickPhaseCamera());
-
-            //GameModeManager.AddHook(GameModeHooks.HookPointEnd, this.FlipRotationDirection);
-
-            //GameModeManager.AddHook(GameModeHooks.HookPickStart, this.ResetCamera);
-            // reset camera on point end so that players next round aren't spawned OOB
-            //GameModeManager.AddHook(GameModeHooks.HookPointEnd, (gm) => this.ResetCameraAfter(gm, 1f));
-
-            /*
-            GameModeManager.AddHook(GameModeHooks.HookPickEnd, Interface.PickEnd);
-            GameModeManager.AddHook(GameModeHooks.HookPointEnd, Interface.PointEnd);
-            GameModeManager.AddHook(GameModeHooks.HookGameEnd, Interface.GameEnd);
-            GameModeManager.AddHook(GameModeHooks.HookGameStart, this.ResetRotationDirection);
-            GameModeManager.AddHook(GameModeHooks.HookRoundEnd, Interface.RoundEnd);
-            GameModeManager.AddHook(GameModeHooks.HookBattleStart, Interface.BattleStart);
-            GameModeManager.AddHook(GameModeHooks.HookPointStart, Interface.PointStart);
-            */
 
             // hooks for OOB patch
             GameModeManager.AddHook(GameModeHooks.HookPointStart, (gm) => OutOfBoundsUtils.SetOOBEnabled(true));
@@ -197,11 +156,6 @@ namespace MapEmbiggener
             GameModeManager.AddHook(GameModeHooks.HookPlayerPickEnd, ControllerManager.OnPlayerPickEnd);
         }
 
-        private IEnumerator ResetRotationDirection(IGameModeHandler gm)
-        {
-            MapEmbiggener.rotationDirection = 1f;
-            yield break;
-        }
         private void NewGUI(GameObject menu)
         {
             MenuHandler.CreateText("Map Embiggener Options", menu, out TextMeshProUGUI _);
@@ -254,62 +208,6 @@ namespace MapEmbiggener
             this.chaosModeToggle = MenuHandler.CreateToggle(MapEmbiggener.ChaosConfig.Value, "Chaos Mode", menu, chaosModeToggleAction, 60).GetComponent<Toggle>();
 
         }
-        private IEnumerator SetZoomModes(IGameModeHandler gm, bool enable)
-        {
-            // disable zoom modes
-            if (!enable)
-            {
-                MapEmbiggener.chaosMode = false;
-                MapEmbiggener.suddenDeathMode = false;
-                yield return this.ResetCamera(gm);
-            }
-            // restore settings
-            else
-            {
-                MapEmbiggener.chaosMode = MapEmbiggener.settingsChaosMode;
-                MapEmbiggener.suddenDeathMode = MapEmbiggener.settingsSuddenDeathMode;
-            }
-
-            yield break;
-        }
-        private IEnumerator StartPickPhaseCamera()
-        {
-            MapManager.instance.currentMap.Map.size = MapEmbiggener.defaultMapSize;
-            OutOfBoundsUtils.SetOOB(OutOfBoundsUtils.defaultX, OutOfBoundsUtils.defaultY);
-
-            yield return new WaitForSecondsRealtime(1.5f);
-
-            yield break;
-        }
-        private IEnumerator EndPickPhaseCamera()
-        {
-            MapManager.instance.currentMap.Map.size = MapEmbiggener.defaultMapSize * MapEmbiggener.settingsSetSize;
-            OutOfBoundsUtils.SetOOB(OutOfBoundsUtils.defaultX * MapEmbiggener.settingsSetSize, OutOfBoundsUtils.defaultY * MapEmbiggener.settingsSetSize);
-
-            yield return new WaitForSecondsRealtime(0.1f);
-
-            yield break;
-        }
-
-        private IEnumerator FlipRotationDirection(IGameModeHandler gm)
-        {
-            MapEmbiggener.rotationDirection *= -1f;
-            yield break;
-        }
-        private IEnumerator ResetCamera(IGameModeHandler gm)
-        {
-
-            //Interface.MoveCamera(new Vector3(0f, 0f, -100f), 0f);
-
-            yield break;
-        }
-        private IEnumerator ResetCameraAfter(IGameModeHandler gm, float delay)
-        {
-            yield return new WaitForSecondsRealtime(0.5f);
-            yield return this.ResetCamera(gm);
-            yield break;
-        }
-
     }
 
 }
