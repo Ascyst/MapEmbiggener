@@ -6,6 +6,7 @@ namespace MapEmbiggener.Controllers
     /// <summary>
     /// Interface for bounds controllers
     /// 
+    /// Damage (OutOfBoundsDamage?) the type of damage that the out of bounds should inflict. options are: Normal, OverTime, Instakill, None, [and null for default]
     /// <Max/Min><X/Y>Target (float?) the target bound on the respective axis (null for default)
     /// AngleTarget (float?) the target angle for the bounds (null for default)
     /// XSpeed / YSpeed (float?) the movement speed for the bounds on the respective axis (null for instant)
@@ -19,6 +20,7 @@ namespace MapEmbiggener.Controllers
     public interface IBoundsController
     {
         bool CallUpdate { get; }
+        OutOfBoundsDamage? Damage { get; }
         float? MaxXTarget { get; }
         float? MaxYTarget { get; }
         float? MinXTarget { get; }

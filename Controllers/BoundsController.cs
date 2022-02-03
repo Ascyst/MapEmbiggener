@@ -15,6 +15,7 @@ namespace MapEmbiggener.Controllers
 		private float? savedXSpeed = null;
 		private float? savedYSpeed = null;
 		private float? savedAngularSpeed = null;
+        public OutOfBoundsDamage? Damage { get; protected set; } = null;
         public float? MaxXTarget { get; protected set; } = null;
 
         public float? MaxYTarget { get; protected set; } = null;

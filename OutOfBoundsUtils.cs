@@ -5,8 +5,18 @@ using MapEmbiggener.UI;
 
 namespace MapEmbiggener
 {
+    public enum OutOfBoundsDamage
+    {
+        Normal,
+        OverTime,
+        Instakill,
+        None
+    }
     public class OutOfBoundsUtils : MonoBehaviour
     {
+
+        public const OutOfBoundsDamage DefaultDamage = OutOfBoundsDamage.Normal;
+
         public const float defaultX = 35.56f;
         public const float defaultY = 20f;
         public const float defaultAngle = 0f;

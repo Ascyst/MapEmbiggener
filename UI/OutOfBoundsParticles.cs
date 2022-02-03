@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using UnboundLib;
-using UnityEngine.Rendering;
+using MapEmbiggener.Controllers;
 
 namespace MapEmbiggener.UI
 {
@@ -144,6 +144,14 @@ namespace MapEmbiggener.UI
             this.gameObject.layer = OutOfBoundsParticles.layer;
 
             OutOfBoundsUtils.particleMask = this.Mask;
+        }
+
+        void Update()
+        {
+            // scale particles with map size
+            this.Particles.transform.localScale = ControllerManager.MapSize * Vector3.one;
+            // center particles with camera
+            this.Particles.transform.position = new Vector3(ControllerManager.CameraPosition.x, ControllerManager.CameraPosition.y, this.Particles.transform.position.z);
         }
     }
 }

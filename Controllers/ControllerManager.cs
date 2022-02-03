@@ -14,6 +14,7 @@ namespace MapEmbiggener.Controllers
 
         public const float DefaultZoom = 20f;
         public static readonly Vector3 DefaultCameraPosition = new Vector3(0f, 0f, -100f);
+        public static readonly Vector3 DefaultCameraRotation = new Vector3(0f, 0f, 0f);
 
         public const string DefaultCameraControllerID = "DefaultCamera";
         public const string DefaultMapControllerID = "DefaultMap";
@@ -116,7 +117,9 @@ namespace MapEmbiggener.Controllers
         }
         public static float Zoom { get; private set; } = DefaultZoom;
         public static Vector3 CameraPosition { get; private set; } = DefaultCameraPosition;
+        public static Vector3 CameraRotation { get; private set; } = DefaultCameraRotation;
         public static float MapSize { get; private set; } = 1f;
+        public static OutOfBoundsDamage Damage { get; private set; } = OutOfBoundsDamage.Normal;
         public static float MaxX { get; private set; } = OutOfBoundsUtils.defaultX;
         public static float MaxY{ get; private set; } = OutOfBoundsUtils.defaultY;
         public static float MinX{ get; private set; } = -OutOfBoundsUtils.defaultX;
@@ -162,7 +165,6 @@ namespace MapEmbiggener.Controllers
                 {
                     // try the current map size first, either through the map itself, or through the map controller
                     if (MapManager.instance.currentMap != null && MapManager.instance.currentMap.Map.size != 0f) { zoomTarget = MapManager.instance.currentMap.Map.size; }
-                    else if (CurrentMapController?.MapSize != null && CurrentMapController.MapSize != 0f) { zoomTarget = CurrentMapController.MapSize; }
                     else { zoomTarget = DefaultZoom; }
                 }
 
@@ -180,6 +182,25 @@ namespace MapEmbiggener.Controllers
                         Zoom += TimeHandler.deltaTime * (float)CurrentCameraController.ZoomSpeed * sgn;
                     }
                 }
+
+                Vector3 posTarget = CurrentCameraController.PositionTarget ?? DefaultCameraPosition;
+                if (CurrentCameraController.MovementSpeed == null)
+                {
+                    CameraPosition = posTarget;
+                }
+                else
+                {
+                    CameraPosition += TimeHandler.deltaTime * (posTarget - CameraPosition).normalized;
+                }
+                Vector3 rotTarget = CurrentCameraController.RotationTarget ?? DefaultCameraRotation;
+                if (CurrentCameraController.MovementSpeed == null)
+                {
+                    CameraRotation = rotTarget;
+                }
+                else
+                {
+                    CameraRotation += TimeHandler.deltaTime * (rotTarget - CameraRotation).normalized;
+                }
             }
             
             // update the map
@@ -195,6 +216,10 @@ namespace MapEmbiggener.Controllers
             if (CurrentBoundsController != null)
             {
                 if (CurrentBoundsController.CallUpdate) { CurrentBoundsController.OnUpdate(); }
+
+                // update bounds damage type
+                Damage = CurrentBoundsController.Damage ?? OutOfBoundsDamage.Normal;
+
                 // figure out what to use for the targets
                 float maxXTarget = CurrentBoundsController.MaxXTarget ?? OutOfBoundsUtils.defaultX;
                 float maxYTarget = CurrentBoundsController.MaxYTarget ?? OutOfBoundsUtils.defaultY;

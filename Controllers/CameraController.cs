@@ -8,11 +8,15 @@ namespace MapEmbiggener.Controllers
         public bool CallUpdate { get; protected set; } = true;
         public Vector3? PositionTarget { get; protected set; } = null;
         public float? MovementSpeed { get; protected set; } = null;
+        public Vector3? RotationTarget { get; protected set; } = null;
+        public float? RotationSpeed { get; protected set; } = null;
         public float? ZoomTarget { get; protected set; } = null;
         public float? ZoomSpeed { get; protected set; } = null;
 
         private Vector3? savedPositionTarget;
         private float? savedMovementSpeed;
+        private Vector3? savedRotationTarget;
+        private float? savedRotationSpeed;
         private float? savedZoomTarget;
         private float? savedZoomSpeed;
         private bool savedCallUpdate;
@@ -44,10 +48,14 @@ namespace MapEmbiggener.Controllers
             this.CallUpdate = false;
             this.savedPositionTarget = this.PositionTarget;
             this.savedMovementSpeed = this.MovementSpeed;
+            this.savedRotationTarget = this.RotationTarget;
+            this.savedRotationSpeed = this.RotationSpeed;
             this.savedZoomTarget = this.ZoomTarget;
             this.savedZoomSpeed = this.ZoomSpeed;
             this.PositionTarget = null;
             this.MovementSpeed = null;
+            this.RotationTarget = null;
+            this.RotationSpeed = null;
             this.ZoomTarget = ControllerManager.DefaultZoom;
             this.ZoomSpeed = null;
             yield break;
@@ -58,6 +66,8 @@ namespace MapEmbiggener.Controllers
             this.CallUpdate = this.savedCallUpdate;
             this.PositionTarget = this.savedPositionTarget;
             this.MovementSpeed = this.savedMovementSpeed;
+            this.RotationTarget = this.savedRotationTarget;
+            this.RotationSpeed = this.savedRotationSpeed;
             this.ZoomTarget = this.savedZoomTarget;
             this.ZoomSpeed = this.savedZoomSpeed;
             yield break;

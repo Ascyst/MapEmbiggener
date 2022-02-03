@@ -8,7 +8,7 @@ using System.Reflection;
 namespace MapEmbiggener.Patches
 {
     /// <summary>
-    /// Patch to separate the camera zoom from the map size 
+    /// Patch to separate the camera zoom from the map size, as well as rotate and position the cameras 
     /// </summary>
     [HarmonyPatch(typeof(CameraZoomHandler), "Update")]
     class CameraZoomHandler_Patch_Update
@@ -17,6 +17,7 @@ namespace MapEmbiggener.Patches
         {
             return ControllerManager.Zoom;
         }
+        // set camera zoom
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> codes)
         {
             FieldInfo f_size = ExtensionMethods.GetFieldInfo(typeof(Map), nameof(Map.size));
@@ -32,6 +33,16 @@ namespace MapEmbiggener.Patches
                 {
                     yield return code;
                 }
+            }
+        }
+        // set camera rotation and position
+        static void Postfix(Camera[] ___cameras)
+        {
+            // cameras will not move instantly for QoL reasons
+            for (int i = 0; i < ___cameras.Length; i++)
+            {
+                ___cameras[i].transform.position = Vector3.Lerp(___cameras[i].transform.position, ControllerManager.CameraPosition, Time.unscaledDeltaTime * 5f);
+                ___cameras[i].transform.rotation = Quaternion.Euler(Vector3.Lerp(___cameras[i].transform.rotation.eulerAngles, ControllerManager.CameraRotation, Time.unscaledDeltaTime * 5f));
             }
         }
     }

@@ -8,6 +8,8 @@ namespace MapEmbiggener.Controllers
     /// 
     /// PositionTarget (Vector3?) - the position the camera is moving to (null for default position)
     /// MovementSpeed (float?) - the speed (units/sec) that the camera moves at (null for instant)
+    /// RotationTarget (Vector3?) - the target Euler angles for the camera (null for default)
+    /// RotationSpeed (float?) - the rotation speed of the camera (null for instant)
     /// ZoomTarget (float?) - the target zoom of the camera (null for default)
     /// ZoomSpeed (float?) - the speed (units/sec) that the camera zooms at (null for instant)
     /// 
@@ -17,6 +19,8 @@ namespace MapEmbiggener.Controllers
         bool CallUpdate { get; }
         Vector3? PositionTarget { get; }
         float? MovementSpeed { get; }
+        Vector3? RotationTarget { get; }
+        float? RotationSpeed { get; }
         float? ZoomTarget { get; }
         float? ZoomSpeed { get; }
 
