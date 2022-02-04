@@ -33,6 +33,7 @@ namespace MapEmbiggener.UI
                 OutOfBoundsParticles._Cam.GetComponent<Camera>().CopyFrom(MainCam.instance.cam);
                 OutOfBoundsParticles._Cam.GetComponent<Camera>().depth = 4;
                 OutOfBoundsParticles._Cam.GetComponent<Camera>().cullingMask = (1 << OutOfBoundsParticles.layer);
+                DontDestroyOnLoad(OutOfBoundsParticles._Cam);
 
                 UnityEngine.GameObject.Find("/Game/Visual/Rendering ").gameObject.GetComponent<CameraZoomHandler>().InvokeMethod("Start");
 
@@ -55,6 +56,7 @@ namespace MapEmbiggener.UI
                 this._Mask.GetOrAddComponent<RectTransform>();
                 this._Mask.transform.localScale = Vector3.one;
                 this._Mask.transform.position = new Vector3(0f, 0f, 1f);
+                DontDestroyOnLoad(this._Mask);
 
                 return this._Mask;
             }
@@ -67,6 +69,8 @@ namespace MapEmbiggener.UI
             get
             {
                 if (this._Particles != null) { return this._Particles; }
+                if (this == null || this.gameObject == null || this.gameObject.transform == null) { return null; }
+                if (UnityEngine.GameObject.Find("Game/UI/UI_MainMenu/Canvas/Particle") == null) { return null; }
 
                 GameObject ParticleHolder = new GameObject("Particles");
                 ParticleHolder.transform.SetParent(this.gameObject.transform);
@@ -81,12 +85,13 @@ namespace MapEmbiggener.UI
                 this._Particles.GetComponent<SpriteRenderer>().maskInteraction = SpriteMaskInteraction.VisibleOutsideMask;
                 */
                 this._Particles.layer = OutOfBoundsParticles.layer;
+                DontDestroyOnLoad(this._Particles);
 
                 return this._Particles;
             }
         }
 
-        private ParticleSystem ParticleSystem => this.Particles.GetComponentInChildren<ParticleSystem>();
+        private ParticleSystem ParticleSystem => this?.Particles?.GetComponentInChildren<ParticleSystem>();
 
         private const float Factor = 27.05f;
         public static void SetSpriteSize(SpriteMask spriteRenderer, Vector2 size)
@@ -102,6 +107,7 @@ namespace MapEmbiggener.UI
         public void SetColor(Color? colorMax = null, Color? colorMin = null)
         {
             // set the particle color
+            if (this.ParticleSystem == null) { return; }
             ParticleSystem.MainModule main = this.ParticleSystem.main;
             ParticleSystem.MinMaxGradient startColor = main.startColor;
             startColor.colorMax = colorMax ?? DefaultColorMax;
@@ -112,6 +118,7 @@ namespace MapEmbiggener.UI
 
         public void SetGravity(float gravity = DefaultGravity)
         {
+            if (this.ParticleSystem == null) { return; }
             ParticleSystem.MainModule main = this.ParticleSystem.main;
             main.gravityModifier = gravity;
             this.ParticleSystem.Play();
@@ -150,8 +157,12 @@ namespace MapEmbiggener.UI
         {
             // scale particles with map size
             this.Particles.transform.localScale = ControllerManager.MapSize * Vector3.one;
-            // center particles with camera
-            this.Particles.transform.position = new Vector3(ControllerManager.CameraPosition.x, ControllerManager.CameraPosition.y, this.Particles.transform.position.z);
+        }
+        void LateUpdate()
+        {
+            // center particles with camera, delayed (Late Update), and smoothly
+            Vector3 target = new Vector3(ControllerManager.CameraPosition.x, ControllerManager.CameraPosition.y, this.Particles.transform.position.z);
+            this.Particles.transform.position = Vector3.MoveTowards(this.Particles.transform.position, target, Vector3.Distance(this.Particles.transform.position, target) * Time.deltaTime);
         }
     }
 }
