@@ -10,6 +10,7 @@ using UnboundLib.GameModes;
 using UnboundLib.Networking;
 using UnboundLib;
 using Photon.Pun;
+using MapEmbiggener.Networking;
 namespace MapEmbiggener.Controllers
 {
     public class ControllerManager : MonoBehaviour
@@ -86,6 +87,14 @@ namespace MapEmbiggener.Controllers
         }
         public static void SetCameraController(string ID)
         {
+            if (PhotonNetwork.OfflineMode || PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null)
+            {
+                NetworkingManager.RPC(typeof(ControllerManager), nameof(RPCA_SetCameraController), ID);
+            }
+        }
+        [UnboundRPC]
+        private static void RPCA_SetCameraController(string ID)
+        {
             if (ID != null && !_CameraControllers.ContainsKey(ID))
             {
                 throw new ArgumentException($"No such Camera Controller: {ID}");
@@ -97,6 +106,14 @@ namespace MapEmbiggener.Controllers
             CurrentCameraControllerID = ID ?? DefaultCameraControllerID;
         }
         public static void SetMapController(string ID)
+        {
+            if (PhotonNetwork.OfflineMode || PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null)
+            {
+                NetworkingManager.RPC(typeof(ControllerManager), nameof(RPCA_SetMapController), ID);
+            }
+        }
+        [UnboundRPC]
+        private static void RPCA_SetMapController(string ID)
         {
             if (ID != null && !_MapControllers.ContainsKey(ID))
             {
@@ -110,6 +127,14 @@ namespace MapEmbiggener.Controllers
         }
         public static void SetBoundsController(string ID)
         {
+            if (PhotonNetwork.OfflineMode || PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null)
+            {
+                NetworkingManager.RPC(typeof(ControllerManager), nameof(RPCA_SetBoundsController), ID);
+            }
+        }
+        [UnboundRPC]
+        private static void RPCA_SetBoundsController(string ID)
+        {
             if (ID != null && !_BoundsControllers.ContainsKey(ID))
             {
                 throw new ArgumentException($"No such Bounds Controller: {ID}");
@@ -120,6 +145,142 @@ namespace MapEmbiggener.Controllers
             }
             CurrentBoundsControllerID = ID ?? DefaultBoundsControllerID;
         }
+        [UnboundRPC]
+        public static void RPC_RequestSync(int requestingPlayer)
+        {
+            NetworkingManager.RPC(typeof(ControllerManager), nameof(ControllerManager.RPC_SyncResponse), requestingPlayer, PhotonNetwork.LocalPlayer.ActorNumber);
+        }
+
+        [UnboundRPC]
+        public static void RPC_SyncResponse(int requestingPlayer, int readyPlayer)
+        {
+            if (PhotonNetwork.LocalPlayer.ActorNumber == requestingPlayer)
+            {
+                ControllerManager.instance.RemovePendingRequest(readyPlayer, nameof(ControllerManager.RPC_RequestSync));
+            }
+        }
+
+        protected virtual IEnumerator WaitForSyncUp()
+        {
+            if (PhotonNetwork.OfflineMode)
+            {
+                yield break;
+            }
+            yield return this.SyncMethod(nameof(ControllerManager.RPC_RequestSync), null, PhotonNetwork.LocalPlayer.ActorNumber);
+        }
+        #region SyncCameraControllerProperties
+        private static void SyncCameraControllerProperties()
+        {
+            if (PhotonNetwork.OfflineMode) { return; }
+
+            if (PhotonNetwork.IsMasterClient)
+            {
+                CurrentCameraController?.SetDataToSync();
+                NetworkingManager.RPC_Others(typeof(ControllerManager), nameof(RPCO_SyncCameraControllerProperties), CurrentCameraController?.CallUpdate, CurrentCameraController?.PositionTarget, CurrentCameraController?.MovementSpeed, CurrentCameraController?.RotationTarget, CurrentCameraController?.RotationSpeed, CurrentCameraController?.ZoomTarget, CurrentCameraController?.ZoomSpeed, CurrentCameraController?.SyncedIntData, CurrentCameraController?.SyncedFloatData, CurrentCameraController?.SyncedStringData);
+            }
+        }
+        [UnboundRPC]
+        private static void RPCO_SyncCameraControllerProperties(bool? callUpdate, Vector3? posTarget, float? movSpeed, Vector3? rotTarget, float? rotSpeed, float? zoomTarget, float? zoomSpeed, Dictionary<string, int> intsToSync, Dictionary<string, float> floatsToSync, Dictionary<string, string> stringsToSync)
+        {
+            if (callUpdate != null)
+            {
+                CurrentCameraController?.ReceiveSyncedCameraData((bool)callUpdate, posTarget, movSpeed, rotTarget, rotSpeed, zoomTarget, zoomSpeed);
+            }
+            if (intsToSync != null) { CurrentCameraController.SyncedIntData = intsToSync; }
+            if (floatsToSync != null) { CurrentCameraController.SyncedFloatData = floatsToSync; }
+            if (stringsToSync != null) { CurrentCameraController.SyncedStringData = stringsToSync; }
+
+            CurrentCameraController?.ReadSyncedData();
+        }
+        #endregion
+        #region SyncMapControllerProperties
+        private static void SyncMapControllerProperties()
+        {
+            if (PhotonNetwork.OfflineMode) { return; }
+
+            if (PhotonNetwork.IsMasterClient)
+            {
+                CurrentMapController?.SetDataToSync();
+                NetworkingManager.RPC_Others(typeof(ControllerManager), nameof(RPCO_SyncMapControllerProperties), CurrentMapController?.CallUpdate, CurrentMapController?.MapSize, CurrentMapController?.SyncedIntData, CurrentMapController?.SyncedFloatData, CurrentMapController?.SyncedStringData);
+            }
+        }
+        [UnboundRPC]
+        private static void RPCO_SyncMapControllerProperties(bool? callUpdate, float? mapSize, Dictionary<string, int> intsToSync, Dictionary<string, float> floatsToSync, Dictionary<string, string> stringsToSync)
+        {
+            if (callUpdate != null)
+            {
+                CurrentMapController?.ReceiveSyncedMapData((bool)callUpdate, mapSize);
+            }
+            if (intsToSync != null) { CurrentMapController.SyncedIntData = intsToSync; }
+            if (floatsToSync != null) { CurrentMapController.SyncedFloatData = floatsToSync; }
+            if (stringsToSync != null) { CurrentMapController.SyncedStringData = stringsToSync; }
+
+            CurrentMapController?.ReadSyncedData();
+        }
+        #endregion
+        #region SyncBoundsControllerProperties
+        private static void SyncBoundsControllerProperties()
+        {
+            if (PhotonNetwork.OfflineMode) { return; }
+
+            if (PhotonNetwork.IsMasterClient)
+            {
+                CurrentBoundsController?.SetDataToSync();
+                NetworkingManager.RPC_Others(typeof(ControllerManager), nameof(RPCO_SyncBoundsControllerProperties), CurrentBoundsController?.CallUpdate, (byte?)CurrentBoundsController?.Damage, CurrentBoundsController?.MaxXTarget, CurrentBoundsController?.MaxYTarget, CurrentBoundsController?.MinXTarget, CurrentBoundsController?.MinYTarget, CurrentBoundsController?.AngleTarget, CurrentBoundsController?.XSpeed, CurrentBoundsController?.YSpeed, CurrentBoundsController?.AngularSpeed, CurrentBoundsController?.SyncedIntData, CurrentBoundsController?.SyncedFloatData, CurrentBoundsController?.SyncedStringData);
+            }
+        }
+        [UnboundRPC]
+        private static void RPCO_SyncBoundsControllerProperties(bool? callUpdate, byte? damage, float? xMaxTarget, float? yMaxTarget, float? xMinTarget, float? yMinTarget, float? angleTarget, float? xSpeed, float? ySpeed, float? angularSpeed, Dictionary<string, int> intsToSync, Dictionary<string, float> floatsToSync, Dictionary<string, string> stringsToSync)
+        {
+            if (callUpdate != null)
+            {
+                CurrentBoundsController?.ReceiveSyncedBoundsData((bool)callUpdate, (OutOfBoundsDamage?)damage, xMaxTarget, yMaxTarget, xMinTarget, yMinTarget, angleTarget, xSpeed, ySpeed, angularSpeed);
+            }
+            if (intsToSync != null) { CurrentBoundsController.SyncedIntData = intsToSync; }
+            if (floatsToSync != null) { CurrentBoundsController.SyncedFloatData = floatsToSync; }
+            if (stringsToSync != null) { CurrentBoundsController.SyncedStringData = stringsToSync; }
+
+            CurrentBoundsController?.ReadSyncedData();
+        }
+        #endregion
+        #region SyncControllerIDs 
+        private static bool WaitingForControllersSync = true;
+        private static IEnumerator SyncControllerIDs()
+        {
+            if (PhotonNetwork.OfflineMode) { yield break; }
+
+            if (PhotonNetwork.IsMasterClient)
+            {
+                yield return ControllerManager.instance.SyncMethod(nameof(RPCA_SyncAllControllers), null, PhotonNetwork.LocalPlayer.ActorNumber, CurrentCameraControllerID, CurrentMapControllerID, CurrentBoundsControllerID);
+            }
+
+            yield return new WaitUntil(() => !WaitingForControllersSync);
+
+            WaitingForControllersSync = true;
+        }
+        [UnboundRPC]
+        private static void RPCA_SyncAllControllers(int authoritativePlayer, string cameraControllerID, string mapControllerID, string boundsControllerID)
+        {
+            if (PhotonNetwork.LocalPlayer.ActorNumber != authoritativePlayer)
+            {
+                ControllerManager.SetCameraController(cameraControllerID);
+                ControllerManager.SetMapController(mapControllerID);
+                ControllerManager.SetBoundsController(boundsControllerID);
+            }
+
+            WaitingForControllersSync = false;
+
+            NetworkingManager.RPC(typeof(ControllerManager), nameof(SyncControllerResponse), authoritativePlayer, PhotonNetwork.LocalPlayer.ActorNumber);
+        }
+        [UnboundRPC]
+        private static void SyncControllerResponse(int authoritativePlayer, int respondingPlayer)
+        {
+            if (PhotonNetwork.LocalPlayer.ActorNumber == authoritativePlayer)
+            {
+                ControllerManager.instance.RemovePendingRequest(respondingPlayer, nameof(ControllerManager.RPCA_SyncAllControllers));
+            }
+        }
+        #endregion
         public static float Zoom { get; private set; } = DefaultZoom;
         public static Vector3 CameraPosition { get; private set; } = DefaultCameraPosition;
         public static Vector3 CameraRotation { get; private set; } = DefaultCameraRotation;
@@ -158,8 +319,35 @@ namespace MapEmbiggener.Controllers
         }
         void Update()
         {
-            if (!GameManager.instance.isPlaying) { return; }
+            if (!GameManager.instance.isPlaying)
+            {
+                // if no game in progress, hide the bounds and reset the camera
+                MaxX = OutOfBoundsUtils.defaultX;
+                MaxY = OutOfBoundsUtils.defaultY;
+                MinX = -OutOfBoundsUtils.defaultX;
+                MinY = -OutOfBoundsUtils.defaultY;
+                Angle = OutOfBoundsUtils.defaultAngle;
+                Damage = OutOfBoundsUtils.DefaultDamage;
+                ParticleColorMax = OutOfBoundsParticles.DefaultColorMax;
+                ParticleColorMin = OutOfBoundsParticles.DefaultColorMin;
+                BorderColor = Color.red;
+                ParticleGravity = OutOfBoundsParticles.DefaultGravity;
 
+                Zoom = DefaultZoom;
+                CameraPosition = DefaultCameraPosition;
+                CameraRotation = DefaultCameraRotation;
+
+                // update all the bounds properties
+                OutOfBoundsUtils.SetOOB(MinX, MaxX, MinY, MaxY, Angle);
+                OutOfBoundsParticles.instance?.SetColor(ParticleColorMax, ParticleColorMin);
+                OutOfBoundsParticles.instance?.SetGravity(ParticleGravity);
+                if (OutOfBoundsUtils.border == null) { return; }
+                OutOfBoundsUtils.border.GetComponentInChildren<ProceduralImage>().color = BorderColor;
+
+                // don't run any controllers
+                return;
+
+            }
             // update the camera
             if (CurrentCameraController != null)
             {
@@ -212,8 +400,8 @@ namespace MapEmbiggener.Controllers
             if (CurrentMapController != null)
             {
                 if (CurrentMapController.CallUpdate) { CurrentMapController.OnUpdate(); }
-                // if the set size is null, use mapembiggener's setting
-                MapSize = CurrentMapController.MapSize ?? MapEmbiggener.setSize;
+                // if the set size is null, use 1f
+                MapSize = CurrentMapController.MapSize ?? 1f;
 
             }
 
@@ -327,12 +515,6 @@ namespace MapEmbiggener.Controllers
                     }
                 }
 
-                // update all the bounds properties
-                OutOfBoundsUtils.SetOOB(MinX, MaxX, MinY, MaxY, Angle);
-                OutOfBoundsParticles.instance?.SetColor(ParticleColorMax, ParticleColorMin);
-                OutOfBoundsParticles.instance?.SetGravity(ParticleGravity);
-                OutOfBoundsUtils.border.GetComponentInChildren<ProceduralImage>().color = BorderColor;
-
             }
 
             // syncing
@@ -340,9 +522,21 @@ namespace MapEmbiggener.Controllers
             if (this.currentFrame > SyncPeriod)
             {
                 this.currentFrame = 0;
-                if (!PhotonNetwork.OfflineMode && PhotonNetwork.IsMasterClient) { NetworkingManager.RPC_Others(typeof(ControllerManager), nameof(RPCA_SyncCurrentProperties), Zoom, CameraPosition, CameraRotation, MapSize, (byte)Damage, MaxX, MaxY, MinX, MinY, Angle); }
+                if (!PhotonNetwork.OfflineMode && PhotonNetwork.CurrentRoom != null && PhotonNetwork.IsMasterClient) 
+                { 
+                    NetworkingManager.RPC_Others(typeof(ControllerManager), nameof(RPCA_SyncCurrentProperties), Zoom, CameraPosition, CameraRotation, MapSize, (byte)Damage, MaxX, MaxY, MinX, MinY, Angle);
+
+                    if (CurrentCameraController?.SyncDataNow() ?? false) { ControllerManager.SyncCameraControllerProperties(); }
+                    if (CurrentMapController?.SyncDataNow() ?? false) { ControllerManager.SyncMapControllerProperties(); }
+                    if (CurrentBoundsController?.SyncDataNow() ?? false) { ControllerManager.SyncBoundsControllerProperties(); }
+                }
             }
 
+            // update all the bounds properties
+            OutOfBoundsUtils.SetOOB(MinX, MaxX, MinY, MaxY, Angle);
+            OutOfBoundsParticles.instance?.SetColor(ParticleColorMax, ParticleColorMin);
+            OutOfBoundsParticles.instance?.SetGravity(ParticleGravity);
+            OutOfBoundsUtils.border.GetComponentInChildren<ProceduralImage>().color = BorderColor;
         }
 
         [UnboundRPC]
@@ -361,7 +555,7 @@ namespace MapEmbiggener.Controllers
         }
 
 
-        #region gamemodehooks     
+        #region Game Mode Hooks
         public static IEnumerator OnInitStart(IGameModeHandler gm)
         {
             yield return CurrentCameraController?.OnInitStart(gm);
@@ -376,6 +570,7 @@ namespace MapEmbiggener.Controllers
         }
         public static IEnumerator OnGameStart(IGameModeHandler gm)
         {
+            yield return ControllerManager.SyncControllerIDs();
             yield return CurrentCameraController?.OnGameStart(gm);
             yield return CurrentMapController?.OnGameStart(gm);
             yield return CurrentBoundsController?.OnGameStart(gm);

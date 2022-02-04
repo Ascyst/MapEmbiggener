@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using HarmonyLib;
 using MapEmbiggener.Extensions;
+using MapEmbiggener.Controllers;
 namespace MapEmbiggener.Patches
 {
     // patch for special stickfightmaps objects
@@ -12,11 +13,11 @@ namespace MapEmbiggener.Patches
             // if this object is a stickfightmaps spawner object, then scale it up and increase its timer
             if (__instance.gameObject.name.ContainsAny(MapEmbiggener.stickFightSpawnerObjs) && !__instance.gameObject.name.ContainsAny(MapEmbiggener.stickFightObjsToIgnore))
             {
-                __instance.seconds *= MapEmbiggener.setSize;
+                __instance.seconds *= ControllerManager.MapSize;
                 foreach (Rigidbody2D rig in __instance.gameObject.GetComponentsInChildren<Rigidbody2D>())
                 {
-                    //rig.mass *= MapEmbiggener.setSize;
-                    rig.transform.localScale *= MapEmbiggener.setSize;
+                    //rig.mass *= ControllerManager.MapSize;
+                    rig.transform.localScale *= ControllerManager.MapSize;
                 }
             }
         }

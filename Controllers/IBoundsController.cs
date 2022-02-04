@@ -17,7 +17,7 @@ namespace MapEmbiggener.Controllers
     /// ParticleGravitySpeed (float?) the speed at which the gravity multiplier changes (null for instant)
     /// 
     /// </summary>
-    public interface IBoundsController
+    public interface IBoundsController : ISyncedController
     {
         bool CallUpdate { get; }
         OutOfBoundsDamage? Damage { get; }
@@ -35,6 +35,7 @@ namespace MapEmbiggener.Controllers
         float? ColorSpeed { get; }
         float? ParticleGravityTarget { get; }
         float? ParticleGravitySpeed { get; }
+        void ReceiveSyncedBoundsData(bool callUpdate, OutOfBoundsDamage? damage, float? maxXTarget, float? maxYTarget, float? minXTarget, float? minYTarget, float? angleTarget, float? xSpeed, float? ySpeed, float? angularSpeed);
         IEnumerator OnInitStart(IGameModeHandler gm);
         IEnumerator OnInitEnd(IGameModeHandler gm);
         IEnumerator OnGameStart(IGameModeHandler gm);

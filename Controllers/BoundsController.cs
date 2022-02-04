@@ -1,6 +1,7 @@
 ﻿using UnboundLib.GameModes;
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 namespace MapEmbiggener.Controllers
 {
     public abstract class BoundsController : IBoundsController
@@ -43,7 +44,25 @@ namespace MapEmbiggener.Controllers
         public float? ParticleGravityTarget { get; protected set; } = null;
 
         public float? ParticleGravitySpeed { get; protected set; } = null;
-
+        public Dictionary<string, int> SyncedIntData { get; set; } = new Dictionary<string, int>() { };
+        public Dictionary<string, float> SyncedFloatData { get; set; } = new Dictionary<string, float>() { };
+        public Dictionary<string, string> SyncedStringData { get; set; } = new Dictionary<string, string>() { };
+        public abstract void SetDataToSync();
+        public abstract void ReadSyncedData();
+        public abstract bool SyncDataNow();
+        void IBoundsController.ReceiveSyncedBoundsData(bool callUpdate, OutOfBoundsDamage? damage, float? maxXTarget, float? maxYTarget, float? minXTarget, float? minYTarget, float? angleTarget, float? xSpeed, float? ySpeed, float? angularSpeed)
+        {
+            this.CallUpdate = callUpdate;
+            this.Damage = damage;
+            this.MaxXTarget = maxXTarget;
+            this.MaxYTarget = maxYTarget;
+            this.MinXTarget = minXTarget;
+            this.MinYTarget = minYTarget;
+            this.AngleTarget = angleTarget;
+            this.XSpeed = xSpeed;
+            this.YSpeed = ySpeed;
+            this.AngularSpeed = angularSpeed;
+        }
         public virtual IEnumerator OnBattleStart(IGameModeHandler gm)
         {
             yield break;
@@ -54,6 +73,14 @@ namespace MapEmbiggener.Controllers
         }
         public virtual IEnumerator OnGameStart(IGameModeHandler gm)
         {
+            this.MaxXTarget = null;
+            this.MaxYTarget = null;
+            this.MinXTarget = null;
+            this.MinYTarget = null;
+            this.AngleTarget = null;
+            this.XSpeed = null;
+            this.YSpeed = null;
+            this.AngularSpeed = null;
             yield break;
         }
         public virtual IEnumerator OnInitEnd(IGameModeHandler gm)

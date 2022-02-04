@@ -1,6 +1,7 @@
 ﻿using UnboundLib.GameModes;
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 namespace MapEmbiggener.Controllers
 {
     public abstract class CameraController : ICameraController
@@ -13,6 +14,10 @@ namespace MapEmbiggener.Controllers
         public float? ZoomTarget { get; protected set; } = null;
         public float? ZoomSpeed { get; protected set; } = null;
 
+        public Dictionary<string, int> SyncedIntData { get; set; } = new Dictionary<string, int>() { };
+        public Dictionary<string, float> SyncedFloatData { get; set; } = new Dictionary<string, float>() { };
+        public Dictionary<string, string> SyncedStringData { get; set; } = new Dictionary<string, string>() { };
+
         private Vector3? savedPositionTarget;
         private float? savedMovementSpeed;
         private Vector3? savedRotationTarget;
@@ -20,6 +25,21 @@ namespace MapEmbiggener.Controllers
         private float? savedZoomTarget;
         private float? savedZoomSpeed;
         private bool savedCallUpdate;
+
+        public abstract void SetDataToSync();
+        public abstract void ReadSyncedData();
+        public abstract bool SyncDataNow();
+
+        void ICameraController.ReceiveSyncedCameraData(bool callUpdate, Vector3? positionTarget, float? movementSpeed, Vector3? rotationTarget, float? rotationSpeed, float? zoomTarget, float? zoomSpeed)
+        {
+            this.CallUpdate = callUpdate;
+            this.PositionTarget = positionTarget;
+            this.MovementSpeed = movementSpeed;
+            this.RotationTarget = rotationTarget;
+            this.RotationSpeed = rotationSpeed;
+            this.ZoomTarget = zoomTarget;
+            this.ZoomSpeed = zoomSpeed;
+        }
 
         public virtual IEnumerator OnBattleStart(IGameModeHandler gm)
         {
@@ -31,6 +51,12 @@ namespace MapEmbiggener.Controllers
         }
         public virtual IEnumerator OnGameStart(IGameModeHandler gm)
         {
+            this.PositionTarget = null;
+            this.MovementSpeed = null;
+            this.RotationTarget = null;
+            this.RotationSpeed = null;
+            this.ZoomTarget = ControllerManager.DefaultZoom;
+            this.ZoomSpeed = null;
             yield break;
         }
         public virtual IEnumerator OnInitEnd(IGameModeHandler gm)

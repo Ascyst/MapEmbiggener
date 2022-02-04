@@ -1,6 +1,7 @@
 ﻿using UnboundLib.GameModes;
 using System.Collections;
 using System.Linq;
+using Photon.Pun;
 
 namespace MapEmbiggener.Controllers.Default
 {
@@ -10,6 +11,17 @@ namespace MapEmbiggener.Controllers.Default
         public const float ChaosModeZoomSpeed = 0.25f;
         private int PlayersAlive => PlayerManager.instance.players.Where(p => !p.data.dead).Select(p => p.playerID).Distinct().Count();
         private bool battleOnGoing = false;
+        private bool suddenDeathMode = false;
+        private bool chaosMode = false;
+        public override IEnumerator OnGameStart(IGameModeHandler gm)
+        {
+            if (PhotonNetwork.OfflineMode || PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null)
+            {
+                this.suddenDeathMode = MapEmbiggener.suddenDeathMode;
+                this.chaosMode = MapEmbiggener.chaosMode;
+            }
+            return base.OnGameStart(gm);
+        }
         public override IEnumerator OnBattleStart(IGameModeHandler gm)
         {
             this.battleOnGoing = true;
@@ -22,12 +34,12 @@ namespace MapEmbiggener.Controllers.Default
         }
         public override void OnUpdate()
         {
-            if (MapEmbiggener.suddenDeathMode && this.battleOnGoing && this.PlayersAlive == 2)
+            if (this.suddenDeathMode && this.battleOnGoing && this.PlayersAlive == 2)
             {
                 this.ZoomTarget = 0f;
                 this.ZoomSpeed = SuddenDeathZoomSpeed;
             }
-            else if (MapEmbiggener.chaosMode && this.battleOnGoing)
+            else if (this.chaosMode && this.battleOnGoing)
             {
                 this.ZoomTarget = 0f;
                 this.ZoomSpeed = ChaosModeZoomSpeed;
@@ -37,6 +49,23 @@ namespace MapEmbiggener.Controllers.Default
                 this.ZoomTarget = null;
                 this.ZoomSpeed = null;
             }
+        }
+
+        public override void SetDataToSync()
+        {
+            this.SyncedIntData["SD"] = this.suddenDeathMode ? 1 : 0;
+            this.SyncedIntData["CM"] = this.chaosMode ? 1 : 0;
+        }
+
+        public override void ReadSyncedData()
+        {
+            this.suddenDeathMode = this.SyncedIntData["SD"] == 1;
+            this.chaosMode = this.SyncedIntData["CM"] == 1;
+        }
+
+        public override bool SyncDataNow()
+        {
+            return true;
         }
     }
 }

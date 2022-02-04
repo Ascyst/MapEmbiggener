@@ -35,6 +35,7 @@
     <Compile Include="Controllers\CameraController.cs" />
     <Compile Include="Controllers\Default\DefaultBoundsController.cs" />
     <Compile Include="Controllers\Default\DefaultMapController.cs" />
+    <Compile Include="Controllers\ISyncedController.cs" />
     <Compile Include="Controllers\MapController.cs" />
     <Compile Include="Controllers\Default\DefaultCameraController.cs" />
     <Compile Include="Controllers\IBoundsController.cs" />
@@ -45,6 +46,7 @@
     <Compile Include="Extensions\OutOfBoundsHandler.cs" />
     <Compile Include="Extensions\String.cs" />
     <Compile Include="MapEmbiggener.cs" />
+    <Compile Include="Networking\SyncMethodStatic.cs" />
     <Compile Include="OutOfBoundsUtils.cs" />
     <Compile Include="Patches\CameraZoomHandler.cs" />
     <Compile Include="Patches\Map.cs" />
@@ -79,6 +81,9 @@
     </Reference>
     <Reference Include="PhotonUnityNetworking">
       <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\ROUNDS\Rounds_Data\Managed\PhotonUnityNetworking.dll</HintPath>
+    </Reference>
+    <Reference Include="System">
+      <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\ROUNDS\Rounds_Data\Managed\System.dll</HintPath>
     </Reference>
     <Reference Include="UnboundLib, Version=2.10.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\UnboundLib.2.10.2\lib\net461\UnboundLib.dll</HintPath>
@@ -128,5 +133,6 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

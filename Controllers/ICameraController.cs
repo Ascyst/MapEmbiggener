@@ -14,7 +14,7 @@ namespace MapEmbiggener.Controllers
     /// ZoomSpeed (float?) - the speed (units/sec) that the camera zooms at (null for instant)
     /// 
     /// </summary>
-    public interface ICameraController
+    public interface ICameraController : ISyncedController
     {
         bool CallUpdate { get; }
         Vector3? PositionTarget { get; }
@@ -23,7 +23,7 @@ namespace MapEmbiggener.Controllers
         float? RotationSpeed { get; }
         float? ZoomTarget { get; }
         float? ZoomSpeed { get; }
-
+        void ReceiveSyncedCameraData(bool callUpdate, Vector3? positionTarget, float? movementSpeed, Vector3? rotationTarget, float? rotationSpeed, float? zoomTarget, float? zoomSpeed);
         IEnumerator OnInitStart(IGameModeHandler gm);
         IEnumerator OnInitEnd(IGameModeHandler gm);
         IEnumerator OnGameStart(IGameModeHandler gm);

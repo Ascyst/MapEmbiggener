@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Linq;
 using UnboundLib.GameModes;
+using Photon.Pun;
 
 namespace MapEmbiggener.Controllers.Default
 {
@@ -15,7 +16,38 @@ namespace MapEmbiggener.Controllers.Default
 
         private int PlayersAlive => PlayerManager.instance.players.Where(p => !p.data.dead).Select(p => p.playerID).Distinct().Count();
         private bool battleOnGoing = false;
+        private bool suddenDeathMode = false;
+        private bool chaosMode = false;
         private int chaosModeSign = -1;
+        public override void SetDataToSync()
+        {
+            this.SyncedIntData["SD"] = this.suddenDeathMode ? 1 : 0;
+            this.SyncedIntData["CM"] = this.chaosMode ? 1 : 0;
+            this.SyncedIntData["CMS"] = this.chaosModeSign;
+        }
+
+        public override void ReadSyncedData()
+        {
+            this.suddenDeathMode = this.SyncedIntData["SD"] == 1;
+            this.chaosMode = this.SyncedIntData["CM"] == 1;
+            this.chaosModeSign = this.SyncedIntData["CMS"];
+        }
+
+        public override bool SyncDataNow()
+        {
+            return true;
+        }
+        public override IEnumerator OnGameStart(IGameModeHandler gm)
+        {
+            this.chaosModeSign = -1;
+            this.AngleTarget = 0f;
+            if (PhotonNetwork.OfflineMode || PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null)
+            {
+                this.suddenDeathMode = MapEmbiggener.suddenDeathMode;
+                this.chaosMode = MapEmbiggener.chaosMode;
+            }
+            return base.OnGameStart(gm);
+        }
         public override IEnumerator OnBattleStart(IGameModeHandler gm)
         {
             this.battleOnGoing = true;
@@ -29,7 +61,7 @@ namespace MapEmbiggener.Controllers.Default
         }
         public override void OnUpdate()
         {
-            if (MapEmbiggener.suddenDeathMode && this.battleOnGoing)
+            if (this.suddenDeathMode && this.battleOnGoing)
             {
                 this.Damage = OutOfBoundsDamage.Normal;
                 if (this.PlayersAlive == 2)
@@ -43,10 +75,10 @@ namespace MapEmbiggener.Controllers.Default
                 }
                 else
                 {
-                    this.MaxXTarget = OutOfBoundsUtils.defaultX * MapEmbiggener.setSize;
-                    this.MinXTarget = -OutOfBoundsUtils.defaultX * MapEmbiggener.setSize;
-                    this.MaxYTarget = OutOfBoundsUtils.defaultY * MapEmbiggener.setSize;
-                    this.MinYTarget = -OutOfBoundsUtils.defaultY * MapEmbiggener.setSize;
+                    this.MaxXTarget = OutOfBoundsUtils.defaultX * ControllerManager.MapSize;
+                    this.MinXTarget = -OutOfBoundsUtils.defaultX * ControllerManager.MapSize;
+                    this.MaxYTarget = OutOfBoundsUtils.defaultY * ControllerManager.MapSize;
+                    this.MinYTarget = -OutOfBoundsUtils.defaultY * ControllerManager.MapSize;
                     this.ParticleGravityTarget = 0f;
                     this.ParticleGravitySpeed = null;
                 }
@@ -55,7 +87,7 @@ namespace MapEmbiggener.Controllers.Default
                 this.AngleTarget = 0f;
                 this.AngularSpeed = null;
             }
-            else if (MapEmbiggener.chaosMode && this.battleOnGoing)
+            else if (this.chaosMode && this.battleOnGoing)
             {
                 this.Damage = OutOfBoundsDamage.OverTime;
                 this.MaxXTarget = 0f;
@@ -72,10 +104,10 @@ namespace MapEmbiggener.Controllers.Default
             else
             {
                 this.Damage = OutOfBoundsDamage.Normal;
-                this.MaxXTarget = OutOfBoundsUtils.defaultX * MapEmbiggener.setSize;
-                this.MinXTarget = -OutOfBoundsUtils.defaultX * MapEmbiggener.setSize;
-                this.MaxYTarget = OutOfBoundsUtils.defaultY * MapEmbiggener.setSize;
-                this.MinYTarget = -OutOfBoundsUtils.defaultY * MapEmbiggener.setSize;
+                this.MaxXTarget = OutOfBoundsUtils.defaultX * ControllerManager.MapSize;
+                this.MinXTarget = -OutOfBoundsUtils.defaultX * ControllerManager.MapSize;
+                this.MaxYTarget = OutOfBoundsUtils.defaultY * ControllerManager.MapSize;
+                this.MinYTarget = -OutOfBoundsUtils.defaultY * ControllerManager.MapSize;
                 this.AngleTarget = 0f;
                 this.XSpeed = null;
                 this.YSpeed = null;

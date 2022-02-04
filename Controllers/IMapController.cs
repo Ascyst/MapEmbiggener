@@ -7,10 +7,11 @@ namespace MapEmbiggener.Controllers
     /// 
     /// MapSize (float?) - the size multiplier to apply to the NEXT map (null for default)
     /// </summary>
-    public interface IMapController
+    public interface IMapController : ISyncedController
     {
         bool CallUpdate { get; }
         float? MapSize { get; }
+        void ReceiveSyncedMapData(bool callUpdate, float? mapSize);
         IEnumerator OnInitStart(IGameModeHandler gm);
         IEnumerator OnInitEnd(IGameModeHandler gm);
         IEnumerator OnGameStart(IGameModeHandler gm);
