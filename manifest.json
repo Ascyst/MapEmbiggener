@@ -1,10 +1,10 @@
 {
     "name": "Map_Embiggener",
-    "version_number": "1.2.9",
-    "website_url": "https://github.com/Ascyst/MapEmbiggener",
+    "version_number": "2.0.0",
+    "website_url": "https://github.com/pdcook/MapEmbiggener",
     "description": "Adjustable Map Sizes!",
     "dependencies": [
-        "willis81808-UnboundLib-2.7.6",
+        "willis81808-UnboundLib-2.10.2",
 	"willis81808-MMHook-1.0.0",
 	"BepInEx-BepInExPack_ROUNDS-5.4.1100"
     ]
