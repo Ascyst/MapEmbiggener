@@ -41,12 +41,12 @@ namespace MapEmbiggener.Controllers
         }
         public virtual IEnumerator OnPickEnd(IGameModeHandler gm)
         {
-            MapManager.instance?.currentMap?.Map?.gameObject?.SetActive(true);
+            //MapManager.instance?.currentMap?.Map?.gameObject?.SetActive(true);
             yield break;
         }
         public virtual IEnumerator OnPickStart(IGameModeHandler gm)
         {
-            MapManager.instance?.currentMap?.Map?.gameObject?.SetActive(false);
+            //MapManager.instance?.currentMap?.Map?.gameObject?.SetActive(false);
             yield break;
         }
         public virtual IEnumerator OnPlayerPickEnd(IGameModeHandler gm)

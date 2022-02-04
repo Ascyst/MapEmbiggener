@@ -31,6 +31,7 @@ namespace MapEmbiggener
 
         public static ConfigEntry<float> SizeConfig;
         public static ConfigEntry<bool> ChaosConfig;
+        public static ConfigEntry<bool> ClassicChaosConfig;
         public static ConfigEntry<bool> SuddenDeathConfig;
 
         internal static MapEmbiggener instance;
@@ -46,6 +47,7 @@ namespace MapEmbiggener
         internal static float setSize = 1.0f;
         internal static bool suddenDeathMode { get; private set; } = false;
         internal static bool chaosMode { get; private set; } = false;
+        internal static bool chaosModeClassic { get; private set; } = false;
 
         internal static float defaultMapSize;
 
@@ -57,6 +59,7 @@ namespace MapEmbiggener
 
         private Toggle suddenDeathModeToggle;
         private Toggle chaosModeToggle;
+        private Toggle chaosModeClassicToggle;
 
         private void Awake()
         {
@@ -67,6 +70,7 @@ namespace MapEmbiggener
             MapEmbiggener.SizeConfig = this.Config.Bind("MapEmbiggener", "Size", 1f, "Size to scale maps to");
             MapEmbiggener.SuddenDeathConfig = this.Config.Bind("MapEmbiggener", "SuddenDeathMode", false, "Enable Sudden Death mode");
             MapEmbiggener.ChaosConfig = this.Config.Bind("MapEmbiggener", "ChaosMode", false, "Enable Chaos mode");
+            MapEmbiggener.ClassicChaosConfig = this.Config.Bind("MapEmbiggener", "ChaosModeClassic", false, "Enable Chaos Mode Classic");
 
             new Harmony(MapEmbiggener.ModId).PatchAll();
             
@@ -90,6 +94,7 @@ namespace MapEmbiggener
             MapEmbiggener.setSize = MapEmbiggener.SizeConfig.Value;
             MapEmbiggener.suddenDeathMode = MapEmbiggener.SuddenDeathConfig.Value;
             MapEmbiggener.chaosMode = MapEmbiggener.ChaosConfig.Value;
+            MapEmbiggener.chaosModeClassic = MapEmbiggener.ClassicChaosConfig.Value;
 
             Unbound.RegisterCredits(MapEmbiggener.ModName, new String[] {"Pykess", "Ascyst (Project creation)", "BossSloth (Customizable bounds)"}, new string[] { "github", "support pykess", "support ascyst", "support bosssloth" }, new string[] { "https://github.com/pdcook/MapEmbiggener", "https://ko-fi.com/pykess", "https://www.buymeacoffee.com/Ascyst", "https://www.buymeacoffee.com/BossSloth" });
             Unbound.RegisterMenu(MapEmbiggener.ModName, () => { }, this.NewGUI, null, false);
@@ -134,15 +139,42 @@ namespace MapEmbiggener
             {
                 MapEmbiggener.SuddenDeathConfig.Value = flag;
                 MapEmbiggener.suddenDeathMode = MapEmbiggener.SuddenDeathConfig.Value;
+                if (flag)
+                {
+                    chaosModeToggle.isOn = false;
+                    chaosModeToggleAction(false);
+                    chaosModeClassicToggle.isOn = false;
+                    chaosModeClassicToggleAction(false);
+                }
             }
             void chaosModeToggleAction(bool flag)
             {
                 MapEmbiggener.ChaosConfig.Value = flag;
                 MapEmbiggener.chaosMode = MapEmbiggener.ChaosConfig.Value;
+                if (flag)
+                {
+                    suddenDeathModeToggle.isOn = false;
+                    suddenDeathModeToggleAction(false);
+                    chaosModeClassicToggle.isOn = false;
+                    chaosModeClassicToggleAction(false);
+                }
+            }
+            void chaosModeClassicToggleAction(bool flag)
+            {
+                MapEmbiggener.ClassicChaosConfig.Value = flag;
+                MapEmbiggener.chaosModeClassic = MapEmbiggener.ClassicChaosConfig.Value;
+                if (flag)
+                {
+                    suddenDeathModeToggle.isOn = false;
+                    suddenDeathModeToggleAction(false);
+                    chaosModeToggle.isOn = false;
+                    chaosModeToggleAction(false);
+                }
             }
 
             this.suddenDeathModeToggle = MenuHandler.CreateToggle(MapEmbiggener.SuddenDeathConfig.Value, "Sudden Death Mode", menu, suddenDeathModeToggleAction, 60).GetComponent<Toggle>();
             this.chaosModeToggle = MenuHandler.CreateToggle(MapEmbiggener.ChaosConfig.Value, "Chaos Mode", menu, chaosModeToggleAction, 60).GetComponent<Toggle>();
+            this.chaosModeClassicToggle = MenuHandler.CreateToggle(MapEmbiggener.ClassicChaosConfig.Value, "Chaos Mode <i>Classic</i>", menu, chaosModeClassicToggleAction, 60).GetComponent<Toggle>();
 
         }
     }

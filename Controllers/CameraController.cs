@@ -9,7 +9,7 @@ namespace MapEmbiggener.Controllers
         public bool CallUpdate { get; protected set; } = true;
         public Vector3? PositionTarget { get; protected set; } = null;
         public float? MovementSpeed { get; protected set; } = null;
-        public Vector3? RotationTarget { get; protected set; } = null;
+        public Quaternion? RotationTarget { get; protected set; } = null;
         public float? RotationSpeed { get; protected set; } = null;
         public float? ZoomTarget { get; protected set; } = null;
         public float? ZoomSpeed { get; protected set; } = null;
@@ -20,7 +20,7 @@ namespace MapEmbiggener.Controllers
 
         private Vector3? savedPositionTarget;
         private float? savedMovementSpeed;
-        private Vector3? savedRotationTarget;
+        private Quaternion? savedRotationTarget;
         private float? savedRotationSpeed;
         private float? savedZoomTarget;
         private float? savedZoomSpeed;
@@ -30,7 +30,7 @@ namespace MapEmbiggener.Controllers
         public abstract void ReadSyncedData();
         public abstract bool SyncDataNow();
 
-        void ICameraController.ReceiveSyncedCameraData(bool callUpdate, Vector3? positionTarget, float? movementSpeed, Vector3? rotationTarget, float? rotationSpeed, float? zoomTarget, float? zoomSpeed)
+        void ICameraController.ReceiveSyncedCameraData(bool callUpdate, Vector3? positionTarget, float? movementSpeed, Quaternion? rotationTarget, float? rotationSpeed, float? zoomTarget, float? zoomSpeed)
         {
             this.CallUpdate = callUpdate;
             this.PositionTarget = positionTarget;

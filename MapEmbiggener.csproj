@@ -50,6 +50,8 @@
     <Compile Include="OutOfBoundsUtils.cs" />
     <Compile Include="Patches\CameraZoomHandler.cs" />
     <Compile Include="Patches\Map.cs" />
+    <Compile Include="Patches\MapManager.cs" />
+    <Compile Include="Patches\MapTransition.cs" />
     <Compile Include="Patches\OutOfBoundsHandlerPatch.cs" />
     <Compile Include="Patches\RemoveAfterSeconds.cs" />
     <Compile Include="Patches\ScreenEdgeBounce.cs" />

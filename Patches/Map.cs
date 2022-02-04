@@ -23,8 +23,6 @@ namespace MapEmbiggener.Patches
             }
             __instance.transform.localScale *= ControllerManager.MapSize;
             __instance.size *= ControllerManager.MapSize;
-            //MapEmbiggener.zoomShrink = 1;
-            //OutOfBoundsUtils.SetOOB(OutOfBoundsUtils.defaultX * MapEmbiggener.settingsSetSize, OutOfBoundsUtils.defaultY * MapEmbiggener.settingsSetSize);
         }
     }
     [HarmonyPatch(typeof(Map), "StartMatch")]

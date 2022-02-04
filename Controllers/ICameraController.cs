@@ -19,11 +19,11 @@ namespace MapEmbiggener.Controllers
         bool CallUpdate { get; }
         Vector3? PositionTarget { get; }
         float? MovementSpeed { get; }
-        Vector3? RotationTarget { get; }
+        Quaternion? RotationTarget { get; }
         float? RotationSpeed { get; }
         float? ZoomTarget { get; }
         float? ZoomSpeed { get; }
-        void ReceiveSyncedCameraData(bool callUpdate, Vector3? positionTarget, float? movementSpeed, Vector3? rotationTarget, float? rotationSpeed, float? zoomTarget, float? zoomSpeed);
+        void ReceiveSyncedCameraData(bool callUpdate, Vector3? positionTarget, float? movementSpeed, Quaternion? rotationTarget, float? rotationSpeed, float? zoomTarget, float? zoomSpeed);
         IEnumerator OnInitStart(IGameModeHandler gm);
         IEnumerator OnInitEnd(IGameModeHandler gm);
         IEnumerator OnGameStart(IGameModeHandler gm);

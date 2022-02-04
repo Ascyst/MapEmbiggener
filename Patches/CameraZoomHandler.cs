@@ -42,7 +42,7 @@ namespace MapEmbiggener.Patches
             for (int i = 0; i < ___cameras.Length; i++)
             {
                 ___cameras[i].transform.position = Vector3.Lerp(___cameras[i].transform.position, ControllerManager.CameraPosition, Time.unscaledDeltaTime * 5f);
-                ___cameras[i].transform.rotation = Quaternion.Euler(Vector3.Lerp(___cameras[i].transform.rotation.eulerAngles, ControllerManager.CameraRotation, Time.unscaledDeltaTime * 5f));
+                ___cameras[i].transform.rotation = Quaternion.RotateTowards(___cameras[i].transform.rotation, ControllerManager.CameraRotation, Time.unscaledDeltaTime * 50f);
             }
         }
     }

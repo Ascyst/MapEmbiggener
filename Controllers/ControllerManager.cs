@@ -20,7 +20,7 @@ namespace MapEmbiggener.Controllers
 
         public const float DefaultZoom = 20f;
         public static readonly Vector3 DefaultCameraPosition = new Vector3(0f, 0f, -100f);
-        public static readonly Vector3 DefaultCameraRotation = new Vector3(0f, 0f, 0f);
+        public static readonly Quaternion DefaultCameraRotation = Quaternion.Euler(Vector3.zero);
 
         public const string DefaultCameraControllerID = "DefaultCamera";
         public const string DefaultMapControllerID = "DefaultMap";
@@ -180,7 +180,7 @@ namespace MapEmbiggener.Controllers
             }
         }
         [UnboundRPC]
-        private static void RPCO_SyncCameraControllerProperties(bool? callUpdate, Vector3? posTarget, float? movSpeed, Vector3? rotTarget, float? rotSpeed, float? zoomTarget, float? zoomSpeed, Dictionary<string, int> intsToSync, Dictionary<string, float> floatsToSync, Dictionary<string, string> stringsToSync)
+        private static void RPCO_SyncCameraControllerProperties(bool? callUpdate, Vector3? posTarget, float? movSpeed, Quaternion? rotTarget, float? rotSpeed, float? zoomTarget, float? zoomSpeed, Dictionary<string, int> intsToSync, Dictionary<string, float> floatsToSync, Dictionary<string, string> stringsToSync)
         {
             if (callUpdate != null)
             {
@@ -283,7 +283,7 @@ namespace MapEmbiggener.Controllers
         #endregion
         public static float Zoom { get; private set; } = DefaultZoom;
         public static Vector3 CameraPosition { get; private set; } = DefaultCameraPosition;
-        public static Vector3 CameraRotation { get; private set; } = DefaultCameraRotation;
+        public static Quaternion CameraRotation { get; private set; } = DefaultCameraRotation;
         public static float MapSize { get; private set; } = 1f;
         public static OutOfBoundsDamage Damage { get; private set; } = OutOfBoundsDamage.Normal;
         public static float MaxX { get; private set; } = OutOfBoundsUtils.defaultX;
@@ -383,16 +383,16 @@ namespace MapEmbiggener.Controllers
                 }
                 else
                 {
-                    CameraPosition += TimeHandler.deltaTime * (posTarget - CameraPosition).normalized;
+                    CameraPosition += (float)CurrentCameraController.MovementSpeed * TimeHandler.deltaTime * (posTarget - CameraPosition).normalized;
                 }
-                Vector3 rotTarget = CurrentCameraController.RotationTarget ?? DefaultCameraRotation;
-                if (CurrentCameraController.MovementSpeed == null)
+                Quaternion rotTarget = CurrentCameraController.RotationTarget ?? DefaultCameraRotation;
+                if (CurrentCameraController.RotationSpeed == null)
                 {
                     CameraRotation = rotTarget;
                 }
                 else
                 {
-                    CameraRotation += TimeHandler.deltaTime * (rotTarget - CameraRotation).normalized;
+                    CameraRotation = Quaternion.RotateTowards(CameraRotation, rotTarget, (float)CurrentCameraController.RotationSpeed * TimeHandler.deltaTime);
                 }
             }
             
@@ -540,7 +540,7 @@ namespace MapEmbiggener.Controllers
         }
 
         [UnboundRPC]
-        private static void RPCA_SyncCurrentProperties(float zoom, Vector3 cameraPos, Vector3 cameraRot, float mapSize, byte damage, float maxX, float maxY, float minX, float minY, float angle)
+        private static void RPCA_SyncCurrentProperties(float zoom, Vector3 cameraPos, Quaternion cameraRot, float mapSize, byte damage, float maxX, float maxY, float minX, float minY, float angle)
         {
             Zoom = zoom;
             CameraPosition = cameraPos;
