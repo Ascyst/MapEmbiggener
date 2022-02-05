@@ -25,6 +25,18 @@ namespace MapEmbiggener.Patches
             __instance.size *= ControllerManager.MapSize;
         }
     }
+    [HarmonyPatch(typeof(Map),"Update")]
+    class Map_Patch_Update
+    {
+        private static void Postfix(Map __instance)
+        {
+            if (__instance?.transform == null) { return; }
+            float angle = ControllerManager.MapAngle - __instance.transform.rotation.eulerAngles.z;
+
+            if (angle == 0f) { return; }
+            __instance.transform.RotateAround(Vector3.zero, Vector3.forward, angle);
+        }
+    }
     [HarmonyPatch(typeof(Map), "StartMatch")]
     class MapPatchStartMatch
     {

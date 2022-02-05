@@ -9,7 +9,7 @@ namespace MapEmbiggener.Controllers.Default
     public class DefaultCameraController : CameraController
     {
         public const float SuddenDeathZoomSpeed = 1f;
-        public const float ChaosModeZoomSpeed = 0.25f;
+        //public const float ChaosModeZoomSpeed = 0.25f;
         public const float ChaosModeClassicZoomSpeed = 0.5f;
         public const float ChaosModeClassicRotationSpeed = 3f;
         private int PlayersAlive => PlayerManager.instance.players.Where(p => !p.data.dead).Select(p => p.playerID).Distinct().Count();
@@ -57,8 +57,10 @@ namespace MapEmbiggener.Controllers.Default
             }
             else if (this.chaosMode && this.battleOnGoing)
             {
-                this.ZoomTarget = 0f;
-                this.ZoomSpeed = ChaosModeZoomSpeed;
+                //this.ZoomTarget = 0f;
+                //this.ZoomSpeed = ChaosModeZoomSpeed;
+                this.ZoomTarget = null;
+                this.ZoomSpeed = null;
                 this.RotationTarget = null;
                 this.RotationSpeed = null;
                 this.PositionTarget = null;

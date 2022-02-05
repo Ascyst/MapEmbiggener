@@ -201,15 +201,15 @@ namespace MapEmbiggener.Controllers
             if (PhotonNetwork.IsMasterClient)
             {
                 CurrentMapController?.SetDataToSync();
-                NetworkingManager.RPC_Others(typeof(ControllerManager), nameof(RPCO_SyncMapControllerProperties), CurrentMapController?.CallUpdate, CurrentMapController?.MapSize, CurrentMapController?.SyncedIntData, CurrentMapController?.SyncedFloatData, CurrentMapController?.SyncedStringData);
+                NetworkingManager.RPC_Others(typeof(ControllerManager), nameof(RPCO_SyncMapControllerProperties), CurrentMapController?.CallUpdate, CurrentMapController?.MapSize, CurrentMapController?.MapAngleTarget, CurrentMapController?.MapAngularSpeed, CurrentMapController?.SyncedIntData, CurrentMapController?.SyncedFloatData, CurrentMapController?.SyncedStringData);
             }
         }
         [UnboundRPC]
-        private static void RPCO_SyncMapControllerProperties(bool? callUpdate, float? mapSize, Dictionary<string, int> intsToSync, Dictionary<string, float> floatsToSync, Dictionary<string, string> stringsToSync)
+        private static void RPCO_SyncMapControllerProperties(bool? callUpdate, float? mapSize, float? mapAngleTarget, float? mapAngularSpeed, Dictionary<string, int> intsToSync, Dictionary<string, float> floatsToSync, Dictionary<string, string> stringsToSync)
         {
             if (callUpdate != null)
             {
-                CurrentMapController?.ReceiveSyncedMapData((bool)callUpdate, mapSize);
+                CurrentMapController?.ReceiveSyncedMapData((bool)callUpdate, mapSize, mapAngleTarget, mapAngularSpeed);
             }
             if (intsToSync != null) { CurrentMapController.SyncedIntData = intsToSync; }
             if (floatsToSync != null) { CurrentMapController.SyncedFloatData = floatsToSync; }
@@ -285,6 +285,7 @@ namespace MapEmbiggener.Controllers
         public static Vector3 CameraPosition { get; private set; } = DefaultCameraPosition;
         public static Quaternion CameraRotation { get; private set; } = DefaultCameraRotation;
         public static float MapSize { get; private set; } = 1f;
+        public static float MapAngle { get; private set; } = 0f;
         public static OutOfBoundsDamage Damage { get; private set; } = OutOfBoundsDamage.Normal;
         public static float MaxX { get; private set; } = OutOfBoundsUtils.defaultX;
         public static float MaxY{ get; private set; } = OutOfBoundsUtils.defaultY;
@@ -368,12 +369,7 @@ namespace MapEmbiggener.Controllers
                 }
                 else
                 {
-                    // direction to zoom. 0 if we're already there, +1 if we're below, -1 if above
-                    int sgn = (float)zoomTarget == Zoom ? 0 : (float)zoomTarget >= Zoom ? +1 : -1;
-                    if (sgn != 0)
-                    {
-                        Zoom += TimeHandler.deltaTime * (float)CurrentCameraController.ZoomSpeed * sgn;
-                    }
+                    Zoom = UnityEngine.Mathf.MoveTowards(Zoom, (float)zoomTarget, TimeHandler.deltaTime * (float)CurrentCameraController.ZoomSpeed);
                 }
 
                 Vector3 posTarget = CurrentCameraController.PositionTarget ?? DefaultCameraPosition;
@@ -383,7 +379,7 @@ namespace MapEmbiggener.Controllers
                 }
                 else
                 {
-                    CameraPosition += (float)CurrentCameraController.MovementSpeed * TimeHandler.deltaTime * (posTarget - CameraPosition).normalized;
+                    CameraPosition = Vector3.MoveTowards(CameraPosition, posTarget, TimeHandler.deltaTime * (float)CurrentCameraController.MovementSpeed);
                 }
                 Quaternion rotTarget = CurrentCameraController.RotationTarget ?? DefaultCameraRotation;
                 if (CurrentCameraController.RotationSpeed == null)
@@ -402,6 +398,17 @@ namespace MapEmbiggener.Controllers
                 if (CurrentMapController.CallUpdate) { CurrentMapController.OnUpdate(); }
                 // if the set size is null, use 1f
                 MapSize = CurrentMapController.MapSize ?? 1f;
+
+                float mapAngleTarget = CurrentMapController.MapAngleTarget ?? 0f;
+
+                if (CurrentMapController.MapAngularSpeed == null)
+                {
+                    MapAngle = mapAngleTarget;
+                }
+                else
+                {
+                    MapAngle = Mathf.MoveTowards(MapAngle, mapAngleTarget, TimeHandler.deltaTime * (float)CurrentMapController.MapAngularSpeed);
+                }
 
             }
 
@@ -424,9 +431,6 @@ namespace MapEmbiggener.Controllers
                 Color borderColorTarget = CurrentBoundsController.BorderColorTarget ?? Color.red;
                 float gravityTarget = CurrentBoundsController.ParticleGravityTarget ?? OutOfBoundsParticles.DefaultGravity;
 
-                // for each of the parameters, find the speed and direction, then update if required
-                int sgn;
-
                 // X bounds
 
                 // null speed means instant
@@ -437,17 +441,8 @@ namespace MapEmbiggener.Controllers
                 }
                 else
                 {
-                    // 0 if we're already there, +1 if we're below, -1 if above
-                    sgn = (float)maxXTarget == MaxX ? 0 : (float)maxXTarget >= MaxX ? +1 : -1;
-                    if (sgn != 0)
-                    {
-                        MaxX += TimeHandler.deltaTime * (float)CurrentBoundsController.XSpeed * sgn;
-                    }
-                    sgn = (float)minXTarget == MinX ? 0 : (float)minXTarget >= MinX ? +1 : -1;
-                    if (sgn != 0)
-                    {
-                        MinX += TimeHandler.deltaTime * (float)CurrentBoundsController.XSpeed * sgn;
-                    }
+                    MaxX = Mathf.MoveTowards(MaxX, maxXTarget, TimeHandler.deltaTime * (float)CurrentBoundsController.XSpeed);
+                    MinX = Mathf.MoveTowards(MinX, minXTarget, TimeHandler.deltaTime * (float)CurrentBoundsController.XSpeed);
                 }
 
                 // Y bounds
@@ -459,16 +454,8 @@ namespace MapEmbiggener.Controllers
                 }
                 else
                 {
-                    sgn = (float)maxYTarget == MaxY ? 0 : (float)maxYTarget >= MaxY ? +1 : -1;
-                    if (sgn != 0)
-                    {
-                        MaxY += TimeHandler.deltaTime * (float)CurrentBoundsController.YSpeed * sgn;
-                    }
-                    sgn = (float)minYTarget == MinY ? 0 : (float)minYTarget >= MinY ? +1 : -1;
-                    if (sgn != 0)
-                    {
-                        MinY += TimeHandler.deltaTime * (float)CurrentBoundsController.YSpeed * sgn;
-                    }
+                    MaxY = Mathf.MoveTowards(MaxY, maxYTarget, TimeHandler.deltaTime * (float)CurrentBoundsController.YSpeed);
+                    MinY = Mathf.MoveTowards(MinY, minYTarget, TimeHandler.deltaTime * (float)CurrentBoundsController.YSpeed);
                 }
 
                 // bounds angle
@@ -479,11 +466,7 @@ namespace MapEmbiggener.Controllers
                 }
                 else
                 {
-                    sgn = (float)angleTarget == Angle ? 0 : (float)angleTarget >= Angle ? +1 : -1;
-                    if (sgn != 0)
-                    {
-                        Angle += TimeHandler.deltaTime * (float)CurrentBoundsController.AngularSpeed * sgn;
-                    }
+                    Angle = Mathf.MoveTowards(Angle, angleTarget, TimeHandler.deltaTime * (float)CurrentBoundsController.AngularSpeed);
                 }
 
                 // colors - making use of Zeno's paradox
@@ -495,9 +478,9 @@ namespace MapEmbiggener.Controllers
                 }
                 else
                 {
-                    ParticleColorMax = Color.Lerp(ParticleColorMax, particleColorMaxTarget, TimeHandler.deltaTime);
-                    ParticleColorMin = Color.Lerp(ParticleColorMin, particleColorMinTarget, TimeHandler.deltaTime);
-                    BorderColor = Color.Lerp(BorderColor, borderColorTarget, TimeHandler.deltaTime);
+                    ParticleColorMax = Color.Lerp(ParticleColorMax, particleColorMaxTarget, TimeHandler.deltaTime * (float)CurrentBoundsController.ColorSpeed);
+                    ParticleColorMin = Color.Lerp(ParticleColorMin, particleColorMinTarget, TimeHandler.deltaTime * (float)CurrentBoundsController.ColorSpeed);
+                    BorderColor = Color.Lerp(BorderColor, borderColorTarget, TimeHandler.deltaTime * (float)CurrentBoundsController.ColorSpeed);
                 }
 
                 // particle gravity
@@ -508,11 +491,7 @@ namespace MapEmbiggener.Controllers
                 }
                 else
                 {
-                    sgn = (float)gravityTarget == ParticleGravity ? 0 : (float)gravityTarget >= ParticleGravity ? +1 : -1;
-                    if (sgn != 0)
-                    {
-                        ParticleGravity += TimeHandler.deltaTime * (float)CurrentBoundsController.ParticleGravitySpeed * sgn;
-                    }
+                    ParticleGravity = Mathf.MoveTowards(ParticleGravity, gravityTarget, TimeHandler.deltaTime * (float)CurrentBoundsController.ParticleGravitySpeed);
                 }
 
             }

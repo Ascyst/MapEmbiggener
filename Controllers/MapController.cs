@@ -7,16 +7,21 @@ namespace MapEmbiggener.Controllers
     {
         public bool CallUpdate { get; protected set; } = true;
         public float? MapSize { get; protected set; } = null;
+        public float? MapAngleTarget { get; protected set; } = null;
+        public float? MapAngularSpeed { get; protected set; } = null;
         public Dictionary<string, int> SyncedIntData { get; set; } = new Dictionary<string, int>() { };
         public Dictionary<string, float> SyncedFloatData { get; set; } = new Dictionary<string, float>() { };
         public Dictionary<string, string> SyncedStringData { get; set; } = new Dictionary<string, string>() { };
+
         public abstract void ReadSyncedData();
         public abstract void SetDataToSync();
         public abstract bool SyncDataNow();
-        void IMapController.ReceiveSyncedMapData(bool callUpdate, float? mapSize)
+        void IMapController.ReceiveSyncedMapData(bool callUpdate, float? mapSize, float? mapAngleTarget, float? mapAngularSpeed)
         {
             this.CallUpdate = callUpdate;
             this.MapSize = mapSize;
+            this.MapAngleTarget = mapAngleTarget;
+            this.MapAngularSpeed = mapAngularSpeed;
         }
 
         public virtual IEnumerator OnBattleStart(IGameModeHandler gm)
@@ -41,12 +46,10 @@ namespace MapEmbiggener.Controllers
         }
         public virtual IEnumerator OnPickEnd(IGameModeHandler gm)
         {
-            //MapManager.instance?.currentMap?.Map?.gameObject?.SetActive(true);
             yield break;
         }
         public virtual IEnumerator OnPickStart(IGameModeHandler gm)
         {
-            //MapManager.instance?.currentMap?.Map?.gameObject?.SetActive(false);
             yield break;
         }
         public virtual IEnumerator OnPlayerPickEnd(IGameModeHandler gm)

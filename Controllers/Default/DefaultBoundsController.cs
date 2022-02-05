@@ -13,7 +13,7 @@ namespace MapEmbiggener.Controllers.Default
         public const float SuddenDeathYSpeed = 1.5f;
 
         public static readonly float ChaosModeXSpeed = (16f / 9f) * ChaosModeYSpeed;
-        public const float ChaosModeYSpeed = 0.5f;
+        public const float ChaosModeYSpeed = 0.25f;
         public const float ChaosModeAngularSpeed = 5f;
 
         public static readonly float ChaosModeClassicXSpeed = (16f / 9f) * ChaosModeClassicYSpeed;

@@ -11,7 +11,9 @@ namespace MapEmbiggener.Controllers
     {
         bool CallUpdate { get; }
         float? MapSize { get; }
-        void ReceiveSyncedMapData(bool callUpdate, float? mapSize);
+        float? MapAngleTarget { get; }
+        float? MapAngularSpeed { get; }
+        void ReceiveSyncedMapData(bool callUpdate, float? mapSize, float? mapAngleTarget, float? mapAngularSpeed);
         IEnumerator OnInitStart(IGameModeHandler gm);
         IEnumerator OnInitEnd(IGameModeHandler gm);
         IEnumerator OnGameStart(IGameModeHandler gm);
