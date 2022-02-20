@@ -44,6 +44,9 @@ namespace MapEmbiggener
 
         private const string ModName = "Map Embiggener";
 
+        private const float AbsMinMapSize = 0.25f;
+        private const float AbsMaxMapSize = 5f;
+
         internal static float setSize = 1.0f;
         internal static bool suddenDeathMode { get; private set; } = false;
         internal static bool chaosMode { get; private set; } = false;
@@ -72,8 +75,6 @@ namespace MapEmbiggener
             MapEmbiggener.ChaosConfig = this.Config.Bind("MapEmbiggener", "ChaosMode", false, "Enable Chaos mode");
             MapEmbiggener.ClassicChaosConfig = this.Config.Bind("MapEmbiggener", "ChaosModeClassic", false, "Enable Chaos Mode Classic");
 
-            new Harmony(MapEmbiggener.ModId).PatchAll();
-            
             this.gameObject.AddComponent<OutOfBoundsUtils>();
             this.gameObject.AddComponent<ControllerManager>().Init();
             
@@ -90,6 +91,8 @@ namespace MapEmbiggener
 
         private void Start()
         {
+            new Harmony(MapEmbiggener.ModId).PatchAll();
+            
             // load settings
             MapEmbiggener.setSize = MapEmbiggener.SizeConfig.Value;
             MapEmbiggener.suddenDeathMode = MapEmbiggener.SuddenDeathConfig.Value;
@@ -128,7 +131,7 @@ namespace MapEmbiggener
                 MapEmbiggener.SizeConfig.Value = val;
                 MapEmbiggener.setSize = val;
             }
-            MenuHandler.CreateSlider("Map Size Multiplier", menu, 60, 0.5f, 3f, MapEmbiggener.SizeConfig.Value, SliderChangedAction, out Slider slider);
+            MenuHandler.CreateSlider("Map Size Multiplier", menu, 60, AbsMinMapSize, AbsMaxMapSize, MapEmbiggener.SizeConfig.Value, SliderChangedAction, out Slider slider);
             void ResetButton()
             {
                 slider.value = 1f;

@@ -7,6 +7,9 @@ using System.Collections;
 using System.Linq;
 using MapEmbiggener.Extensions;
 using MapEmbiggener.Controllers;
+using System;
+using System.Reflection;
+using System.Reflection.Emit;
 
 namespace MapEmbiggener.Patches
 {
@@ -37,94 +40,127 @@ namespace MapEmbiggener.Patches
             __instance.transform.RotateAround(Vector3.zero, Vector3.forward, angle);
         }
     }
-    [HarmonyPatch(typeof(Map), "StartMatch")]
+    [HarmonyPatch]
     class MapPatchStartMatch
     {
-        private static void Postfix(Map __instance)
+        static Type GetNestedMoveType()
         {
-            Unbound.Instance.ExecuteAfterFrames(2, () =>
+            var nestedTypes = typeof(Map).GetNestedTypes(BindingFlags.Instance | BindingFlags.NonPublic);
+            Type nestedType = null;
+
+            foreach (var type in nestedTypes)
             {
-                // if a stickfightmaps object has any particlesystem components, then scale those up
-                foreach (ParticleSystem part in __instance.gameObject.GetComponentsInChildren<ParticleSystem>())
+                if (type.Name.Contains("StartMatch"))
                 {
-                    if (part.gameObject.IsStickFightObject())
+                    nestedType = type;
+                    break;
+                }
+            }
+
+            return nestedType;
+        }
+
+        static MethodBase TargetMethod()
+        {
+            return AccessTools.Method(GetNestedMoveType(), "MoveNext");
+        }
+
+        private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> codes)
+        {
+            var m_Embiggen = ExtensionMethods.GetMethodInfo(typeof(MapPatchStartMatch), nameof(Embiggen));
+            foreach (CodeInstruction code in codes)
+            {
+                if (code.opcode == OpCodes.Ldc_I4_0)
+                {
+                    yield return new CodeInstruction(OpCodes.Ldloc_1);
+                    yield return new CodeInstruction(OpCodes.Call, m_Embiggen);
+                }
+                yield return code;
+            }
+        }
+
+        private static void Embiggen(Map __instance)
+        {
+            // if a stickfightmaps object has any particlesystem components, then scale those up
+            foreach (ParticleSystem part in __instance.gameObject.GetComponentsInChildren<ParticleSystem>())
+            {
+                if (part.gameObject.IsStickFightObject())
+                {
+                    part.transform.localScale *= ControllerManager.MapSize;
+                }
+            }
+            foreach (Rigidbody2D rig in __instance.allRigs)
+            {
+
+                // if its a MapsExtended object, mess with the position only on the host's side
+                if (rig.gameObject.IsMapsExtObject())
+                {
+                    if (rig.gameObject.GetComponent<PhotonView>().IsMine)
                     {
-                        part.transform.localScale *= ControllerManager.MapSize;
+                        rig.gameObject.transform.position = new Vector3(ControllerManager.MapSize * rig.gameObject.transform.position.x, rig.gameObject.transform.position.y * ControllerManager.MapSize, rig.gameObject.transform.position.z);
                     }
                 }
-                foreach (Rigidbody2D rig in __instance.allRigs)
+
+                // rescale physics objects UNLESS they have a movesequence component
+                // also UNLESS they are a crate from stickfight (Boss Sloth's stickfight maps mod)
+                // if they have a movesequence component then scale the points in that component
+
+                if (rig.gameObject.IsStickFightObject())
                 {
 
-                    // if its a MapsExtended object, mess with the position only on the host's side
-                    if (rig.gameObject.IsMapsExtObject())
+                    if (rig.gameObject.name.Contains("PLatform"))
                     {
-                        if (rig.gameObject.GetComponent<PhotonView>().IsMine)
-                        {
-                            rig.gameObject.transform.position = new Vector3(ControllerManager.MapSize * rig.gameObject.transform.position.x, rig.gameObject.transform.position.y * ControllerManager.MapSize, rig.gameObject.transform.position.z);
-                        }
+                        rig.transform.localScale /= ControllerManager.MapSize;
                     }
 
-                    // rescale physics objects UNLESS they have a movesequence component
-                    // also UNLESS they are a crate from stickfight (Boss Sloth's stickfight maps mod)
-                    // if they have a movesequence component then scale the points in that component
+                    rig.mass *= ControllerManager.MapSize;
 
-                    if (rig.gameObject.IsStickFightObject())
+                    // increase the strength of chains
+                    if (rig.gameObject.name.Contains("Chain"))
                     {
-
-                        if (rig.gameObject.name.Contains("PLatform"))
+                        if (rig.gameObject.GetComponent<ForceMultiplier>() != null) { rig.gameObject.GetComponent<ForceMultiplier>().multiplier *= ControllerManager.MapSize; }
+                        foreach (DistanceJoint2D joint in rig.gameObject.GetComponents<DistanceJoint2D>())
                         {
-                            rig.transform.localScale /= ControllerManager.MapSize;
+                            joint.distance *= ControllerManager.MapSize;
                         }
+                    }
+                    continue;
+                }
 
-                        rig.mass *= ControllerManager.MapSize;
+                if (rig.gameObject.GetComponentInChildren<MoveSequence>(true) == null)
+                {
+                    rig.mass *= ControllerManager.MapSize;
 
-                        // increase the strength of chains
-                        if (rig.gameObject.name.Contains("Chain"))
-                        {
-                            if (rig.gameObject.GetComponent<ForceMultiplier>() != null) { rig.gameObject.GetComponent<ForceMultiplier>().multiplier *= ControllerManager.MapSize; }
-                            foreach (DistanceJoint2D joint in rig.gameObject.GetComponents<DistanceJoint2D>())
-                            {
-                                joint.distance *= ControllerManager.MapSize;
-                            }
-                        }
+                    // if its a maps extended object, then only change its size on the host client
+                    if (rig.gameObject.IsMapsExtObject() && !rig.gameObject.GetComponent<PhotonView>().IsMine)
+                    {
                         continue;
                     }
 
-                    if (rig.gameObject.GetComponentInChildren<MoveSequence>(true) == null)
-                    {
-                        rig.mass *= ControllerManager.MapSize;
-
-                        // if its a maps extended object, then only change its size on the host client
-                        if (rig.gameObject.IsMapsExtObject() && !rig.gameObject.GetComponent<PhotonView>().IsMine)
-                        {
-                            continue;
-                        }
-
-                        rig.transform.localScale *= ControllerManager.MapSize;
-                    }
-                    else
-                    {
-                        List<Vector2> newPos = new List<Vector2>() { };
-                        MoveSequence move = rig.gameObject.GetComponentInChildren<MoveSequence>(true);
-                        foreach (Vector2 pos in move.positions)
-                        {
-                            newPos.Add(pos * ControllerManager.MapSize);
-                        }
-                        move.positions = newPos.ToArray();
-                        move.SetFieldValue("startPos", ControllerManager.MapSize * (Vector2)move.GetFieldValue("startPos"));
-                    }
+                    rig.transform.localScale *= ControllerManager.MapSize;
                 }
-
-                GameObject Rendering = GameObject.Find("/Game/Visual/Rendering ");
-
-                if (Rendering != null)
+                else
                 {
-                    foreach (Transform transform in Rendering.GetComponentsInChildren<Transform>(true))
+                    List<Vector2> newPos = new List<Vector2>() { };
+                    MoveSequence move = rig.gameObject.GetComponentInChildren<MoveSequence>(true);
+                    foreach (Vector2 pos in move.positions)
                     {
-                        transform.localScale = new Vector3(ControllerManager.MapSize, ControllerManager.MapSize, transform.localScale.z);// Vector3.one * Mathf.Clamp(ControllerManager.MapSize, 0.1f, 2f);
+                        newPos.Add(pos * ControllerManager.MapSize);
                     }
+                    move.positions = newPos.ToArray();
+                    move.SetFieldValue("startPos", ControllerManager.MapSize * (Vector2)move.GetFieldValue("startPos"));
                 }
-            });
+            }
+
+            GameObject Rendering = GameObject.Find("/Game/Visual/Rendering ");
+
+            if (Rendering != null)
+            {
+                foreach (Transform transform in Rendering.GetComponentsInChildren<Transform>(true))
+                {
+                    transform.localScale = new Vector3(ControllerManager.MapSize, ControllerManager.MapSize, transform.localScale.z);// Vector3.one * Mathf.Clamp(ControllerManager.MapSize, 0.1f, 2f);
+                }
+            }
         }
     }
 }
