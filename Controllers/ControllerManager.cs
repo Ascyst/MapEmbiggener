@@ -493,8 +493,8 @@ namespace MapEmbiggener.Controllers
                 {
                     ParticleGravity = Mathf.MoveTowards(ParticleGravity, gravityTarget, TimeHandler.deltaTime * (float)CurrentBoundsController.ParticleGravitySpeed);
                 }
-
             }
+
 
             // syncing
             this.currentFrame++;

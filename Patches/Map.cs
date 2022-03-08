@@ -152,14 +152,12 @@ namespace MapEmbiggener.Patches
                 }
             }
 
+            // this is only the move the overhead light into the correct place
             GameObject Rendering = GameObject.Find("/Game/Visual/Rendering ");
 
             if (Rendering != null)
             {
-                foreach (Transform transform in Rendering.GetComponentsInChildren<Transform>(true))
-                {
-                    transform.localScale = new Vector3(ControllerManager.MapSize, ControllerManager.MapSize, transform.localScale.z);// Vector3.one * Mathf.Clamp(ControllerManager.MapSize, 0.1f, 2f);
-                }
+                Rendering.transform.localScale = new Vector3(ControllerManager.MapSize, ControllerManager.MapSize, Rendering.transform.localScale.z);
             }
         }
     }
