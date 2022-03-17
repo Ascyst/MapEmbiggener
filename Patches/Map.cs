@@ -68,14 +68,16 @@ namespace MapEmbiggener.Patches
         private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> codes)
         {
             var m_Embiggen = ExtensionMethods.GetMethodInfo(typeof(MapPatchStartMatch), nameof(Embiggen));
+            var f_allRigs = ExtensionMethods.GetFieldInfo(typeof(Map), nameof(Map.allRigs));
+
             foreach (CodeInstruction code in codes)
             {
-                if (code.opcode == OpCodes.Ldc_I4_0)
+                yield return code;
+                if (code.StoresField(f_allRigs))
                 {
                     yield return new CodeInstruction(OpCodes.Ldloc_1);
                     yield return new CodeInstruction(OpCodes.Call, m_Embiggen);
                 }
-                yield return code;
             }
         }
 
