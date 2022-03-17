@@ -47,6 +47,11 @@ namespace MapEmbiggener.Controllers.Default
         {
             return true;
         }
+        public override IEnumerator OnInitEnd(IGameModeHandler gm)
+        {
+            this.CallUpdate = true;
+            return base.OnInitEnd(gm);
+        }
         public override IEnumerator OnGameStart(IGameModeHandler gm)
         {
             this.chaosModeSign = -1;

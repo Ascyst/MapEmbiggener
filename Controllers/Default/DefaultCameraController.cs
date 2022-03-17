@@ -18,6 +18,11 @@ namespace MapEmbiggener.Controllers.Default
         private bool chaosMode = false;
         private bool chaosModeClassic = false;
         private int chaosModeClassicSign = -1;
+        public override IEnumerator OnInitEnd(IGameModeHandler gm)
+        {
+            this.CallUpdate = true;
+            return base.OnInitEnd(gm);
+        }
         public override IEnumerator OnGameStart(IGameModeHandler gm)
         {
             this.chaosModeClassicSign = -1;

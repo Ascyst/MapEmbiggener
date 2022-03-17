@@ -17,7 +17,11 @@ namespace MapEmbiggener.Controllers.Default
         {
             return true;
         }
-
+        public override IEnumerator OnInitEnd(IGameModeHandler gm)
+        {
+            this.CallUpdate = true;
+            return base.OnInitEnd(gm);
+        }
         public override IEnumerator OnGameStart(IGameModeHandler gm)
         {
             if (PhotonNetwork.OfflineMode || PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null)
