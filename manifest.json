@@ -4,7 +4,7 @@
     "website_url": "https://github.com/pdcook/MapEmbiggener",
     "description": "Adjustable Map Sizes!",
     "dependencies": [
-        "willis81808-UnboundLib-2.10.2",
+        "willis81808-UnboundLib-2.11.1",
 	"willis81808-MMHook-1.0.0",
 	"BepInEx-BepInExPack_ROUNDS-5.4.1100"
     ]

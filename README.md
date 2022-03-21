@@ -1,6 +1,16 @@
 # Map Embiggener
 -------------------
 
+### v2.0.0
+----------
+
+- Complete rewrite
+- Support for other mods to implement their own controllers
+    - Map Controllers: control the embiggening of the map
+    - Camera Controllers: control the zoom, position, and rotation of the camera
+    - Bounds Controllers: control the position, damage type, and rotation of the out of bounds
+- Added visuals to the out of bounds
+
 ### v1.2.9
 ----------
 
