@@ -1,6 +1,14 @@
 # Map Embiggener
 -------------------
 
+### v2.1.0
+----------
+
+- Adjustments to new Chaos Mode
+    - OOB damage now accelerates over time
+    - OOB damage now scales with distance from the nearest bound
+    - Players can now shield bounce off of the bounds (but cannot block while far out of bounds to get shot back in)
+
 ### v2.0.0
 ----------
 

@@ -93,8 +93,19 @@ namespace MapEmbiggener.Patches
                     vector.y = 1f;
                 }
             }
-            ___counter = ___counter + TimeHandler.deltaTime;
+            ___counter += TimeHandler.deltaTime;
             __instance.GetAdditionalData().DoTCounter += TimeHandler.deltaTime;
+           
+            if (___outOfBounds)
+            {
+                __instance.GetAdditionalData().OOBTimer += TimeHandler.deltaTime;
+            }
+            else
+            {
+                __instance.GetAdditionalData().OOBTimer = 0f;
+                __instance.GetAdditionalData().DamageTicks = 0;
+            }
+            
             if (___almostOutOfBounds && !___data.dead)
             {
                 __instance.transform.position = (Vector3)__instance.InvokeMethod("GetPoint", vector);
@@ -143,12 +154,38 @@ namespace MapEmbiggener.Patches
                 }
                 else if (ControllerManager.Damage == OutOfBoundsDamage.OverTime)
                 {
-                    // do damage over time with no force applied, and no way to bounce
+                    // player can shield the out of bounds, only on the first damage tick
+                    if (___counter > 0.1f && ___data.view.IsMine && __instance.GetAdditionalData().DamageTicks == 0)
+                    {
+                        ___counter = 0f;
+                        if (___data.block.IsBlocking())
+                        {
+                            // This makes sure we almost always launch about 60% of the map size
+                            var launchCorrection = __instance.transform.up.x != 0
+                                ? (OutOfBoundsUtils.maxX - OutOfBoundsUtils.minX) / 71.12f
+                                : (OutOfBoundsUtils.maxY - OutOfBoundsUtils.minY) / 40f;
+                            ___rpc.CallFunction("ShieldOutOfBounds");
+                            Traverse.Create(___data.playerVel).Field("velocity").SetValue((Vector2)Traverse.Create(___data.playerVel).Field("velocity").GetValue() * 0f);
+                            ___data.healthHandler.CallTakeForce(__instance.transform.up * 400f * launchCorrection * (float)___data.playerVel.GetFieldValue("mass"), ForceMode2D.Impulse, false, true, 0f);
+                            ___data.transform.position = __instance.transform.position;
+                            return false; // skip the original (BAD IDEA)
+                        }
+                    }
+                    
+                    // do damage over time with no force applied
+                    // damage should be scaled with distance from the bounds and time since entering out of bounds
                     if (__instance.GetAdditionalData().DoTCounter > 0.5f && ___data.view.IsMine)
                     {
+                        // base damage is 25 HP
+                        // 25 HP per second per second
+                        // 25 HP per tenth of the width of the map
+                        float distance = Vector2.Distance(__instance.transform.position, ___data.transform.position);
+                        float damage = 25f + 25f * (__instance.GetAdditionalData().OOBTimer + (10f * distance / (OutOfBoundsUtils.maxX - OutOfBoundsUtils.minX)));
+
                         __instance.GetAdditionalData().DoTCounter = 0f;
                         ___rpc.CallFunction("OutOfBounds");
-                        ___data.healthHandler.CallTakeDamage(26f * __instance.transform.up, ___data.transform.position, null, null, true);
+                        ___data.healthHandler.CallTakeDamage(damage * __instance.transform.up, ___data.transform.position, null, null, true);
+                        __instance.GetAdditionalData().DamageTicks++;
                     }
                 }
                 else if (ControllerManager.Damage == OutOfBoundsDamage.Instakill)
