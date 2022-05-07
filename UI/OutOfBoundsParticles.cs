@@ -162,6 +162,10 @@ namespace MapEmbiggener.UI
         {
             // center particles with camera, delayed (Late Update), and smoothly
             Vector3 target = new Vector3(ControllerManager.CameraPosition.x, ControllerManager.CameraPosition.y, this.Particles.transform.position.z);
+
+            // constrain the target position to be within the bounds
+            target = OutOfBoundsUtils.GetPoint(OutOfBoundsUtils.InverseGetPoint(target));
+
             this.Particles.transform.position = Vector3.MoveTowards(this.Particles.transform.position, target, Vector3.Distance(this.Particles.transform.position, target) * Time.deltaTime);
         }
     }
