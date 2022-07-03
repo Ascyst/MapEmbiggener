@@ -502,12 +502,29 @@ namespace MapEmbiggener.Controllers
             {
                 this.currentFrame = 0;
                 if (!PhotonNetwork.OfflineMode && PhotonNetwork.CurrentRoom != null && PhotonNetwork.IsMasterClient) 
-                { 
-                    NetworkingManager.RPC_Others(typeof(ControllerManager), nameof(RPCA_SyncCurrentProperties), Zoom, CameraPosition, CameraRotation, MapSize, (byte)Damage, MaxX, MaxY, MinX, MinY, Angle);
+                {
 
-                    if (CurrentCameraController?.SyncDataNow() ?? false) { ControllerManager.SyncCameraControllerProperties(); }
-                    if (CurrentMapController?.SyncDataNow() ?? false) { ControllerManager.SyncMapControllerProperties(); }
-                    if (CurrentBoundsController?.SyncDataNow() ?? false) { ControllerManager.SyncBoundsControllerProperties(); }
+                    bool? syncCameraController = CurrentCameraController?.SyncDataNow();
+                    bool? syncMapController = CurrentMapController?.SyncDataNow();
+                    bool? syncBoundsController = CurrentBoundsController?.SyncDataNow();
+
+                    // sync core properties only from controllers that have requested syncing (force them if they return null)
+                    float? zoomToSync = (syncCameraController ?? true) ? (float?)Zoom : null;
+                    Vector3? posToSync = (syncCameraController ?? true) ? (Vector3?)CameraPosition : null;
+                    Quaternion? rotToSync = (syncCameraController ?? true) ? (Quaternion?)CameraRotation : null;
+                    float? mapSizeToSync = (syncMapController ?? true) ? (float?)MapSize : null;
+                    byte? damageToSync = (syncBoundsController ?? true) ? (byte?)Damage : null;
+                    float? maxXToSync = (syncBoundsController ?? true) ? (float?)MaxX : null;
+                    float? maxYToSync = (syncBoundsController ?? true) ? (float?)MaxY : null;
+                    float? minXToSync = (syncBoundsController ?? true) ? (float?)MinX : null;
+                    float? minYToSync = (syncBoundsController ?? true) ? (float?)MinY : null;
+                    float? angleToSync = (syncBoundsController ?? true) ? (float?)Angle : null;
+
+                    NetworkingManager.RPC_Others(typeof(ControllerManager), nameof(RPCA_SyncCurrentProperties), zoomToSync, posToSync, rotToSync, mapSizeToSync, damageToSync, maxXToSync, maxYToSync, minXToSync, minYToSync, angleToSync);
+
+                    if (syncCameraController ?? false) { ControllerManager.SyncCameraControllerProperties(); }
+                    if (syncMapController ?? false) { ControllerManager.SyncMapControllerProperties(); }
+                    if (syncBoundsController ?? false) { ControllerManager.SyncBoundsControllerProperties(); }
                 }
             }
 
@@ -519,18 +536,48 @@ namespace MapEmbiggener.Controllers
         }
 
         [UnboundRPC]
-        private static void RPCA_SyncCurrentProperties(float zoom, Vector3 cameraPos, Quaternion cameraRot, float mapSize, byte damage, float maxX, float maxY, float minX, float minY, float angle)
+        private static void RPCA_SyncCurrentProperties(float? zoom, Vector3? cameraPos, Quaternion? cameraRot, float? mapSize, byte? damage, float? maxX, float? maxY, float? minX, float? minY, float? angle)
         {
-            Zoom = zoom;
-            CameraPosition = cameraPos;
-            CameraRotation = cameraRot;
-            MapSize = mapSize;
-            Damage = (OutOfBoundsDamage)damage;
-            MaxX = maxX;
-            MaxY = maxY;
-            MinX = minX;
-            MinY = minY;
-            Angle = angle;
+            if (zoom.HasValue)
+            {
+                Zoom = zoom.Value;
+            }
+            if (cameraPos.HasValue)
+            {
+                CameraPosition = cameraPos.Value;
+            }
+            if (cameraRot.HasValue)
+            {
+                CameraRotation = cameraRot.Value;
+            }
+            if (mapSize.HasValue)
+            {
+                MapSize = mapSize.Value;
+            }
+            if (damage.HasValue)
+            {
+                Damage = (OutOfBoundsDamage)damage.Value;
+            }
+            if (maxX.HasValue)
+            {
+                MaxX = maxX.Value;
+            }
+            if (maxY.HasValue)
+            {
+                MaxY = maxY.Value;
+            }
+            if (minX.HasValue)
+            {
+                MinX = minX.Value;
+            }
+            if (minY.HasValue)
+            {
+                MinY = minY.Value;
+            }
+            if (angle.HasValue)
+            {
+                Angle = angle.Value;
+            }
         }
 
 
