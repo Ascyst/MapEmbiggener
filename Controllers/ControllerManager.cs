@@ -320,7 +320,12 @@ namespace MapEmbiggener.Controllers
         }
         void Update()
         {
-            if (!GameManager.instance.isPlaying)
+            // special handling for map editor
+            GameObject firstChild = MapManager.instance?.currentMap?.Map?.transform?.GetChild(0)?.gameObject;
+            bool isMapEditor = firstChild?.name?.Equals("Content") ?? false;
+            bool isMapEditorSimulating = isMapEditor && !(firstChild?.activeSelf ?? false);
+
+            if (!GameManager.instance.isPlaying || isMapEditor)
             {
                 // if no game in progress, hide the bounds and reset the camera
                 MaxX = OutOfBoundsUtils.defaultX;
@@ -334,8 +339,34 @@ namespace MapEmbiggener.Controllers
                 BorderColor = Color.red;
                 ParticleGravity = OutOfBoundsParticles.DefaultGravity;
 
-                Zoom = DefaultZoom;
-                CameraPosition = DefaultCameraPosition;
+                if (isMapEditor && !isMapEditorSimulating)
+                {
+                    if (Input.GetKey(KeyCode.W))
+                    {
+                        CameraPosition += Vector3.up * Time.deltaTime * 20f;
+                    }
+                    if (Input.GetKey(KeyCode.S))
+                    {
+                        CameraPosition -= Vector3.up * Time.deltaTime * 20f;
+                    }
+                    if (Input.GetKey(KeyCode.A))
+                    {
+                        CameraPosition -= Vector3.right * Time.deltaTime * 20f;
+                    }
+                    if (Input.GetKey(KeyCode.D))
+                    {
+                        CameraPosition += Vector3.right * Time.deltaTime * 20f;
+                    }
+                    if (Input.mouseScrollDelta.y != 0f)
+                    {
+                        Zoom = UnityEngine.Mathf.Clamp(Zoom - Input.mouseScrollDelta.y * Time.deltaTime * 20f, 1f, float.MaxValue);
+                    }
+                }
+                else
+                {
+                    Zoom = DefaultZoom;
+                    CameraPosition = DefaultCameraPosition;
+                }
                 CameraRotation = DefaultCameraRotation;
 
                 // update all the bounds properties
