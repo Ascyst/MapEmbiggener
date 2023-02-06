@@ -1,6 +1,11 @@
 # Map Embiggener
 -------------------
 
+### v2.2.0
+----------
+
+- Added utilities for custom gamemodes
+
 ### v2.1.0
 ----------
 
